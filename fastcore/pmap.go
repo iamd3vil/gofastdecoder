@@ -43,3 +43,7 @@ func (p *PMAP) Next() bool {
 
 // BitsConsumed reports how many bits have been read via Next.
 func (p *PMAP) BitsConsumed() int { return p.cursor }
+
+// Buffer returns the backing byte slice, so a caller that passed a reusable
+// buffer to ReadPMAP can store the (possibly grown) slice for reuse.
+func (p *PMAP) Buffer() []byte { return p.data }

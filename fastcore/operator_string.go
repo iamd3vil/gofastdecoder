@@ -5,6 +5,105 @@ package fastcore
 // Unicode/byte-vector they are raw 8-bit bytes. The combine logic is identical
 // across them; only the wire representation of the appended part differs.
 
+// BytesKind selects the wire representation for a byte-like field decoded by
+// DecodeBytes: ASCII string entity vs length-prefixed byte vector (also used
+// for Unicode, whose wire form is a UTF-8 byte vector).
+type BytesKind uint8
+
+const (
+	ASCIIKind BytesKind = iota
+	ByteVectorKind
+)
+
+// readBytesValue reads one mandatory/nullable byte-like value per kind.
+func (r *Reader) readBytesValue(kind BytesKind, optional bool) (val []byte, null bool, err error) {
+	switch kind {
+	case ASCIIKind:
+		if optional {
+			s, n, e := r.ReadNullableASCII()
+			return []byte(s), n, e
+		}
+		s, e := r.ReadASCII()
+		return []byte(s), false, e
+	default: // ByteVectorKind (incl. Unicode)
+		if optional {
+			return r.ReadNullableByteVector()
+		}
+		b, e := r.ReadByteVector()
+		return b, false, e
+	}
+}
+
+// DecodeBytes decodes a string or byte-vector field under none/constant/
+// default/copy. Delta and tail have dedicated functions (DecodeASCIIDelta,
+// DecodeUnicodeDelta, DecodeASCIITail) because their wire/combine logic differs.
+func DecodeBytes(r *Reader, pm *PMAP, op Operator, kind BytesKind, optional, hasInitial bool, initial []byte, slot *BytesSlot) (val []byte, present bool, err error) {
+	switch op {
+	case OpNone:
+		v, null, err := r.readBytesValue(kind, optional)
+		if err != nil || (optional && null) {
+			return nil, false, err
+		}
+		return v, true, nil
+
+	case OpConstant:
+		if !optional || pm.Next() {
+			return initial, true, nil
+		}
+		return nil, false, nil
+
+	case OpDefault:
+		if pm.Next() {
+			v, null, err := r.readBytesValue(kind, optional)
+			if err != nil || (optional && null) {
+				return nil, false, err
+			}
+			return v, true, nil
+		}
+		if hasInitial {
+			return initial, true, nil
+		}
+		if optional {
+			return nil, false, nil
+		}
+		return nil, false, ErrD5
+
+	case OpCopy:
+		if pm.Next() {
+			v, null, err := r.readBytesValue(kind, optional)
+			if err != nil {
+				return nil, false, err
+			}
+			if optional && null {
+				slot.State = Empty
+				return nil, false, nil
+			}
+			slot.set(v)
+			return v, true, nil
+		}
+		switch slot.State {
+		case Assigned:
+			return slot.Val, true, nil
+		case Undefined:
+			if hasInitial {
+				slot.set(initial)
+				return slot.Val, true, nil
+			}
+			if optional {
+				slot.State = Empty
+				return nil, false, nil
+			}
+			return nil, false, ErrD5
+		default:
+			if optional {
+				return nil, false, nil
+			}
+			return nil, false, ErrD6
+		}
+	}
+	return nil, false, errUnsupportedOperator(op)
+}
+
 // stringBase resolves the base value for delta: assigned -> previous;
 // undefined -> initial or the empty default; empty -> ERR D6.
 func stringBase(slot *BytesSlot, hasInitial bool, initial []byte) ([]byte, error) {
