@@ -62,9 +62,13 @@ type Op struct {
 }
 
 // Element is a named member of an enum or set (FAST 1.2). Value is the encoded
-// integer assigned to the element.
+// integer assigned to the element (position for enum, bit for set, or an
+// explicit value= attribute). Label is the human-readable name used for the
+// generated Go constant: the element's id attribute when present (some feeds
+// put a numeric FIX value in name and the description in id), otherwise name.
 type Element struct {
 	Name  string
+	Label string
 	Value int64
 }
 
@@ -103,6 +107,11 @@ type Field struct {
 
 	// Elements lists the members of an Enum or Set field.
 	Elements []Element
+
+	// TypeName is the name of the <define> an Enum or Set field was resolved
+	// from, if any. The emitter uses it to generate one shared Go enum type
+	// reused across templates; anonymous enums get a per-field type.
+	TypeName string
 
 	// Unit and Epoch describe a Timestamp field ("day"/"second"/"millisecond"/
 	// "microsecond"/"nanosecond"; epoch "" defaults to UNIX, "today" for time).

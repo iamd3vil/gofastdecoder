@@ -63,6 +63,12 @@ The decode path is allocation-free once buffers are warm (enforced by
 - Static `<templateRef name="T"/>`: the referenced template is inlined,
   including references whose target is defined in a different file (pass each
   file with a repeated `-in`; `parser.ParseFiles` merges and resolves them).
+- Typed enum/set fields: each `enum`/`set` becomes a named Go type with value
+  constants (named from the element `id`, else `name`); a field from a named
+  `<define>` shares one type across templates.
+- Dictionary reset: each decoder and the `Router` have `Reset()`; set
+  `Router.ResetID` to the feed's FAST reset template id (e.g. 120 for T7
+  MDI/EMDI) and the Router resets dictionaries when that message arrives.
 
 **Not yet implemented**
 

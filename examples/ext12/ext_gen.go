@@ -12,7 +12,7 @@ import (
 type Ext struct {
 	Flag bool
 	When time.Time
-	Kind uint64
+	Kind ExtKind
 }
 
 // ExtDecoder decodes Ext messages. Reuse it across messages; its
@@ -40,7 +40,7 @@ func (d *ExtDecoder) decodeExt(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Ext)
 	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtKind); err != nil {
 		return err
 	} else if present {
-		m.Kind = v
+		m.Kind = ExtKind(v)
 	}
 	return nil
 }
@@ -68,6 +68,15 @@ func (d *ExtDecoder) Reset() {
 
 // isFASTMessage marks Ext as a Message.
 func (*Ext) isFASTMessage() {}
+
+// ExtKind is a generated FAST enum/set type.
+type ExtKind uint64
+
+const (
+	ExtKindA ExtKind = 0
+	ExtKindB ExtKind = 1
+	ExtKindC ExtKind = 2
+)
 
 // Message is any FAST message decoded by Router in this package.
 type Message interface{ isFASTMessage() }

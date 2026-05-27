@@ -1262,7 +1262,15 @@ func (p *parser) resolveTypeRef(ri rawInstruction) (*ast.Field, error) {
 		return nil, nil
 	}
 
-	return p.resolveField(merged)
+	f, err := p.resolveField(merged)
+	if err != nil {
+		return nil, err
+	}
+	// Record the define name so the emitter can generate one shared enum type.
+	if f != nil && (f.Type == ast.Enum || f.Type == ast.Set) {
+		f.TypeName = ri.typeRef
+	}
+	return f, nil
 }
 
 // resolveSequence converts a sequence rawInstruction into an ast.Sequence.
@@ -1474,9 +1482,12 @@ func assignElementValues(elems []rawElem, bt ast.BaseType) []ast.Element {
 	}
 	for i, el := range elems {
 		name := el.Name
-		// Some fixtures put the display name in id= and a numeric name.
-		// We keep the name attr as the primary name (numeric or not).
-		_ = el.ID // id attr on <element> is not mapped to ast.Element
+		// Some feeds put a numeric FIX value in name= and the description in
+		// id=; prefer id= as the human label for the generated constant.
+		label := el.ID
+		if label == "" {
+			label = el.Name
+		}
 
 		var val int64
 		if el.Value != "" {
@@ -1490,7 +1501,7 @@ func assignElementValues(elems []rawElem, bt ast.BaseType) []ast.Element {
 		} else {
 			val = auto
 		}
-		out[i] = ast.Element{Name: name, Value: val}
+		out[i] = ast.Element{Name: name, Label: label, Value: val}
 
 		// Advance auto counter.
 		if bt == ast.Set {

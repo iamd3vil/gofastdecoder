@@ -27,7 +27,7 @@ func TestExtDecode(t *testing.T) {
 	if want := time.Unix(100, 0).UTC(); !m.When.Equal(want) {
 		t.Errorf("When = %v, want %v", m.When, want)
 	}
-	if m.Kind != 2 {
-		t.Errorf("Kind = %d, want 2", m.Kind)
+	if m.Kind != ExtKindC { // typed enum constant; encoded value 2
+		t.Errorf("Kind = %d, want %d (ExtKindC)", m.Kind, ExtKindC)
 	}
 }

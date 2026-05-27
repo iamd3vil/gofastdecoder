@@ -23,11 +23,12 @@ import (
 
 // Generate produces formatted Go source for schema s in package pkg.
 func Generate(s *ast.Schema, pkg string) ([]byte, error) {
-	g := &generator{imports: map[string]bool{
-		"github.com/iamd3vil/gofastdecoder/fastcore": true,
-	}}
+	g := &generator{
+		imports:  map[string]bool{"github.com/iamd3vil/gofastdecoder/fastcore": true},
+		enumSeen: map[string]bool{},
+	}
 
-	blocks := make([]string, 0, len(s.Templates)+1)
+	blocks := make([]string, 0, len(s.Templates)+2)
 	var routerTemplates []routerEntry
 	for _, t := range s.Templates {
 		blk, err := g.templateBlock(t)
@@ -36,6 +37,16 @@ func Generate(s *ast.Schema, pkg string) ([]byte, error) {
 		}
 		blocks = append(blocks, blk)
 		routerTemplates = append(routerTemplates, routerEntry{Name: exported(t.Name), ID: t.ID})
+	}
+
+	// Typed enum/set declarations (collected while emitting fields), before
+	// their first use.
+	if len(g.enums) > 0 {
+		enumBlock, err := render("enums", struct{ Enums []enumView }{buildEnumViews(g.enums)})
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, enumBlock)
 	}
 
 	// A Router over all templates: dispatches on the template id (PMAP bit 0).
@@ -74,9 +85,44 @@ type generator struct {
 	pmaps      []string   // nested-segment PMAP buffer field names for the current template
 	topDecoder string     // receiver type name for the current template's methods
 	methods    []string   // rendered method bodies for the current template
+	enums      []enumType // enum/set types to emit, in first-seen order
+	enumSeen   map[string]bool
 }
 
 type slotDecl struct{ Name, Type string }
+
+// enumType is a generated Go named type for an enum or set field.
+type enumType struct {
+	Name     string
+	Elements []ast.Element
+}
+
+// enumView is the rendered form: a type name plus fully-formed const declaration
+// lines (e.g. "ColorsRed Colors = 0").
+type enumView struct {
+	Name   string
+	Consts []string
+}
+
+// buildEnumViews turns collected enum types into render views, naming each
+// constant <Type><Label> and de-duplicating names within a type.
+func buildEnumViews(enums []enumType) []enumView {
+	views := make([]enumView, 0, len(enums))
+	for _, e := range enums {
+		seen := make(map[string]bool, len(e.Elements))
+		consts := make([]string, 0, len(e.Elements))
+		for _, el := range e.Elements {
+			cname := e.Name + exported(el.Label)
+			if seen[cname] {
+				cname = fmt.Sprintf("%s_%d", cname, el.Value) // disambiguate clashes
+			}
+			seen[cname] = true
+			consts = append(consts, fmt.Sprintf("%s %s = %d", cname, e.Name, el.Value))
+		}
+		views = append(views, enumView{Name: e.Name, Consts: consts})
+	}
+	return views
+}
 
 // routerEntry is one template the generated Router can dispatch to.
 type routerEntry struct {
@@ -171,7 +217,7 @@ func (g *generator) renderStructs(w *strings.Builder, name string, instrs []ast.
 				}
 				continue
 			}
-			gt, err := goType(x)
+			gt, err := g.goFieldType(x, name)
 			if err != nil {
 				return err
 			}
@@ -340,11 +386,18 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		assign := "v"
+		switch f.Type {
+		case ast.Boolean:
+			assign = "fastcore.Bool(v)"
+		case ast.Enum, ast.Set:
+			assign = g.enumTypeName(f, slotPrefix) + "(v)"
+		}
 		return render("fieldUint", struct {
-			Field, Op, Width, Init, Slot string
-			Optional, HasInit, IsBool    bool
-		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot,
-			Optional: optional, HasInit: hasInit, IsBool: f.Type == ast.Boolean})
+			Field, Op, Width, Init, Slot, Assign string
+			Optional, HasInit                    bool
+		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot, Assign: assign,
+			Optional: optional, HasInit: hasInit})
 
 	case ast.Decimal:
 		if f.Exponent != nil || f.Mantissa != nil {
@@ -542,6 +595,33 @@ func (g *generator) addSlot(path string, f *ast.Field) string {
 }
 
 // --- type / initial-value mapping helpers ---
+
+// enumTypeName returns the Go type name for an enum/set field and registers the
+// type for emission (deduped by name). A field resolved from a named <define>
+// shares one type across templates; an anonymous enum gets a per-field type
+// named after the struct and field.
+func (g *generator) enumTypeName(f *ast.Field, structName string) string {
+	var name string
+	if f.TypeName != "" {
+		name = exported(f.TypeName)
+	} else {
+		name = structName + exported(f.Name)
+	}
+	if !g.enumSeen[name] {
+		g.enumSeen[name] = true
+		g.enums = append(g.enums, enumType{Name: name, Elements: f.Elements})
+	}
+	return name
+}
+
+// goFieldType is goType but resolves enum/set fields to their generated named
+// type (registering it). structName scopes anonymous enum types.
+func (g *generator) goFieldType(f *ast.Field, structName string) (string, error) {
+	if f.Type == ast.Enum || f.Type == ast.Set {
+		return g.enumTypeName(f, structName), nil
+	}
+	return goType(f)
+}
 
 func goType(f *ast.Field) (string, error) {
 	switch f.Type {

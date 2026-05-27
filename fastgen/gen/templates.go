@@ -168,10 +168,20 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 	if v, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, {{.Width}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
 		return err
 	} else if present {
-{{if .IsBool}}		m.{{.Field}} = fastcore.Bool(v)
-{{else}}		m.{{.Field}} = v
-{{end}}{{if .Optional}}		m.Has{{.Field}} = true
+		m.{{.Field}} = {{.Assign}}
+{{if .Optional}}		m.Has{{.Field}} = true
 {{end}}	}
+{{- end -}}
+
+{{/* enums: generated Go named types and value constants for enum/set fields. */}}
+{{- define "enums" -}}
+{{range .Enums}}// {{.Name}} is a generated FAST enum/set type.
+type {{.Name}} uint64
+
+const (
+{{range .Consts}}	{{.}}
+{{end}})
+{{end}}
 {{- end -}}
 
 {{- define "fieldDecimal" -}}

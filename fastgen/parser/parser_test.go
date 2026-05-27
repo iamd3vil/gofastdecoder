@@ -295,9 +295,9 @@ func TestEnumElementValues(t *testing.T) {
 		t.Errorf("type: want Enum got %v", f.Type)
 	}
 	want := []ast.Element{
-		{Name: "M1", Value: 0},
-		{Name: "M2", Value: 1},
-		{Name: "M3", Value: 2},
+		{Name: "M1", Label: "M1", Value: 0},
+		{Name: "M2", Label: "M2", Value: 1},
+		{Name: "M3", Label: "M3", Value: 2},
 	}
 	if len(f.Elements) != len(want) {
 		t.Fatalf("elements: want %d got %d", len(want), len(f.Elements))
@@ -375,9 +375,9 @@ func TestSetElementValues(t *testing.T) {
 		t.Errorf("type: want Set got %v", f.Type)
 	}
 	want := []ast.Element{
-		{Name: "A", Value: 1},
-		{Name: "B", Value: 2},
-		{Name: "C", Value: 4},
+		{Name: "A", Label: "A", Value: 1},
+		{Name: "B", Label: "B", Value: 2},
+		{Name: "C", Label: "C", Value: 4},
 	}
 	for i, w := range want {
 		if f.Elements[i] != w {
