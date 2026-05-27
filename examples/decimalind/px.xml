@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.1">
+  <template name="Px" id="6">
+    <decimal name="size">
+      <exponent><copy/></exponent>
+      <mantissa><delta/></mantissa>
+    </decimal>
+  </template>
+</templates>

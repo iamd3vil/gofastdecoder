@@ -159,6 +159,19 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{end}}	}
 {{- end -}}
 
+{{- define "fieldDecimalIndividual" -}}
+	if exp, present, err := fastcore.DecodeInt(r, &pm, {{.ExpOp}}, fastcore.W32, {{.Optional}}, {{.ExpHasInit}}, {{.ExpInit}}, &d.{{.ExpSlot}}); err != nil {
+		return err
+	} else if present {
+		mant, _, merr := fastcore.DecodeInt(r, &pm, {{.MantOp}}, fastcore.W64, false, {{.MantHasInit}}, {{.MantInit}}, &d.{{.MantSlot}})
+		if merr != nil {
+			return merr
+		}
+		m.{{.Field}} = fastcore.Decimal{Mant: mant, Exp: int32(exp)}
+{{if .Optional}}		m.Has{{.Field}} = true
+{{end}}	}
+{{- end -}}
+
 {{- define "fieldBytes" -}}
 	if v, present, err := fastcore.DecodeBytes(r, &pm, {{.Op}}, {{.Kind}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
 		return err

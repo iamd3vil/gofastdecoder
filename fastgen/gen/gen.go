@@ -315,7 +315,7 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 
 	case ast.Decimal:
 		if f.Exponent != nil || f.Mantissa != nil {
-			return "", fmt.Errorf("field %q: decimal with individual exponent/mantissa operators not yet supported", f.Name)
+			return g.decimalIndividualStep(slotPrefix, f, optional)
 		}
 		slot := g.addSlot(slotPrefix+fname, f)
 		hasInit, m, e, err := decimalInitial(f)
@@ -341,6 +341,45 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 		return g.bitGroupStep(slotPrefix, f)
 	}
 	return "", fmt.Errorf("field %q: type not yet supported by emitter", f.Name)
+}
+
+// decimalIndividualStep renders a decimal whose exponent and mantissa carry
+// separate operators (§6.2.2). They decode as two integer fields: the exponent
+// is int32 and optional iff the decimal is optional; the mantissa is int64 and
+// mandatory, present only when the exponent is present (§10.5.1).
+func (g *generator) decimalIndividualStep(slotPrefix string, f *ast.Field, optional bool) (string, error) {
+	fname := exported(f.Name)
+	expSlot := g.addSlot(slotPrefix+fname+"Exp", &ast.Field{Type: ast.Int64})
+	mantSlot := g.addSlot(slotPrefix+fname+"Mant", &ast.Field{Type: ast.Int64})
+
+	expOp, expHas, expInit := opIntParts(f.Exponent)
+	mantOp, mantHas, mantInit := opIntParts(f.Mantissa)
+	return render("fieldDecimalIndividual", struct {
+		Field, ExpOp, ExpInit, ExpSlot, MantOp, MantInit, MantSlot string
+		Optional, ExpHasInit, MantHasInit                          bool
+	}{
+		Field: fname,
+		ExpOp: expOp, ExpInit: expInit, ExpSlot: expSlot, ExpHasInit: expHas,
+		MantOp: mantOp, MantInit: mantInit, MantSlot: mantSlot, MantHasInit: mantHas,
+		Optional: optional,
+	})
+}
+
+// opIntParts returns the operator expression, has-initial flag, and integer
+// initial expression for an optional decimal component operator (nil = none).
+func opIntParts(op *ast.Op) (opExpr string, hasInit bool, initExpr string) {
+	if op == nil {
+		return "fastcore.OpNone", false, "0"
+	}
+	expr, _ := operatorExpr(op.Kind)
+	if !op.HasInitial {
+		return expr, false, "0"
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(op.Initial), 10, 64)
+	if err != nil {
+		return expr, false, "0"
+	}
+	return expr, true, strconv.FormatInt(n, 10)
 }
 
 // bitGroupStep renders the decode for a bit group: read the SBIT entity, then
@@ -480,9 +519,6 @@ func goType(f *ast.Field) (string, error) {
 	case ast.Boolean:
 		return "bool", nil
 	case ast.Decimal:
-		if f.Exponent != nil || f.Mantissa != nil {
-			return "", fmt.Errorf("field %q: decimal with individual operators not yet supported", f.Name)
-		}
 		return "fastcore.Decimal", nil
 	case ast.ASCIIString, ast.UnicodeString:
 		return "string", nil
