@@ -257,6 +257,13 @@ func (g *generator) step(slotPrefix string, in ast.Instruction) (string, func() 
 		return s, func() error { return g.nestedMethod(slotPrefix+gname, x.Instructions) }, err
 	case *ast.Sequence:
 		return g.sequenceStep(slotPrefix, x)
+	case *ast.TemplateRef:
+		// In-file static refs are inlined by the parser. A dynamic ref or an
+		// unresolved (cross-file) static ref reaches here unhandled.
+		if x.Dynamic {
+			return "", nil, fmt.Errorf("dynamic templateRef not yet supported")
+		}
+		return "", nil, fmt.Errorf("unresolved templateRef %q (target not in this template set)", x.Name)
 	}
 	return "", nil, fmt.Errorf("unsupported instruction %T", in)
 }

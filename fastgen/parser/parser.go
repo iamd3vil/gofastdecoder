@@ -193,7 +193,82 @@ func (p *parser) parse(data []byte) (*ast.Schema, error) {
 	if schema == nil {
 		return nil, fmt.Errorf("parser: no <templates> or <template> root element found")
 	}
+	if err := inlineStaticTemplateRefs(schema); err != nil {
+		return nil, err
+	}
 	return schema, nil
+}
+
+// inlineStaticTemplateRefs replaces every static <templateRef name="T"/> with a
+// copy of T's instructions (§6.4), recursively, with cycle detection. Dynamic
+// references (no name) are left in place. A reference to an unknown template is
+// an error.
+func inlineStaticTemplateRefs(schema *ast.Schema) error {
+	byName := make(map[string]*ast.Template, len(schema.Templates))
+	for _, t := range schema.Templates {
+		byName[t.Name] = t
+	}
+	for _, t := range schema.Templates {
+		expanded, err := expandRefs(t.Instructions, byName, map[string]bool{t.Name: true})
+		if err != nil {
+			return fmt.Errorf("template %q: %w", t.Name, err)
+		}
+		t.Instructions = expanded
+	}
+	return nil
+}
+
+// expandRefs returns instrs with static template references replaced by the
+// referenced template's (recursively expanded) instructions. active guards
+// against reference cycles.
+func expandRefs(instrs []ast.Instruction, byName map[string]*ast.Template, active map[string]bool) ([]ast.Instruction, error) {
+	out := make([]ast.Instruction, 0, len(instrs))
+	for _, in := range instrs {
+		switch x := in.(type) {
+		case *ast.TemplateRef:
+			if x.Dynamic {
+				out = append(out, x) // left for the consumer
+				continue
+			}
+			target, ok := byName[x.Name]
+			if !ok {
+				// The target is not in this template set (e.g. a cross-file or
+				// cross-namespace reference). Leave it unresolved for the
+				// consumer to report; parsing one file should still succeed.
+				out = append(out, x)
+				continue
+			}
+			if active[x.Name] {
+				return nil, fmt.Errorf("cyclic templateRef involving %q", x.Name)
+			}
+			active[x.Name] = true
+			sub, err := expandRefs(target.Instructions, byName, active)
+			active[x.Name] = false
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, sub...)
+		case *ast.Group:
+			sub, err := expandRefs(x.Instructions, byName, active)
+			if err != nil {
+				return nil, err
+			}
+			g := *x
+			g.Instructions = sub
+			out = append(out, &g)
+		case *ast.Sequence:
+			sub, err := expandRefs(x.Instructions, byName, active)
+			if err != nil {
+				return nil, err
+			}
+			s := *x
+			s.Instructions = sub
+			out = append(out, &s)
+		default:
+			out = append(out, in)
+		}
+	}
+	return out, nil
 }
 
 // normalizeXMLDecl fixes malformed XML declarations found in some fixture
@@ -497,10 +572,16 @@ func (p *parser) parseInstructionList(dec *xml.Decoder, endTag string) ([]ast.In
 					return nil, "", err
 				}
 			case "templateRef":
-				// templateRef is not representable in the AST – skip it.
+				var refName string
+				for _, a := range t.Attr {
+					if localName(a.Name) == "name" {
+						refName = a.Value
+					}
+				}
 				if err := skipElement(dec); err != nil {
 					return nil, "", err
 				}
+				instrs = append(instrs, &ast.TemplateRef{Name: refName, Dynamic: refName == ""})
 			case "view":
 				// FAST extension – skip
 				if err := skipElement(dec); err != nil {
@@ -766,9 +847,16 @@ func (p *parser) parseSequenceElement(dec *xml.Decoder, ri rawInstruction) (rawI
 					return ri, err
 				}
 			case "templateRef":
+				tr := rawInstruction{kind: "templateRef"}
+				for _, a := range t.Attr {
+					if localName(a.Name) == "name" {
+						tr.name = a.Value
+					}
+				}
 				if err := skipElement(dec); err != nil {
 					return ri, err
 				}
+				ri.instructions = append(ri.instructions, tr)
 			default:
 				sub, err := p.parseRawInstruction(dec, t, ln)
 				if err != nil {
@@ -812,9 +900,16 @@ func (p *parser) parseGroupElement(dec *xml.Decoder, ri rawInstruction) (rawInst
 					return ri, err
 				}
 			case "templateRef":
+				tr := rawInstruction{kind: "templateRef"}
+				for _, a := range t.Attr {
+					if localName(a.Name) == "name" {
+						tr.name = a.Value
+					}
+				}
 				if err := skipElement(dec); err != nil {
 					return ri, err
 				}
+				ri.instructions = append(ri.instructions, tr)
 			default:
 				sub, err := p.parseRawInstruction(dec, t, ln)
 				if err != nil {
@@ -1001,8 +1096,10 @@ func (p *parser) resolveInstruction(ri rawInstruction) (ast.Instruction, error) 
 		return p.resolveSequence(ri)
 	case "group":
 		return p.resolveGroup(ri)
-	case "templateRef", "_op":
-		return nil, nil // not represented in AST
+	case "templateRef":
+		return &ast.TemplateRef{Name: ri.name, Dynamic: ri.name == ""}, nil
+	case "_op":
+		return nil, nil // operator marker, not an instruction
 	default:
 		return nil, fmt.Errorf("unknown instruction kind %q", ri.kind)
 	}

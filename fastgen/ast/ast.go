@@ -68,12 +68,24 @@ type Element struct {
 	Value int64
 }
 
-// Instruction is a template body entry: a Field, Sequence, or Group.
+// Instruction is a template body entry: a Field, Sequence, Group, or
+// (before resolution) a TemplateRef.
 type Instruction interface{ instrNode() }
 
-func (*Field) instrNode()    {}
-func (*Sequence) instrNode() {}
-func (*Group) instrNode()    {}
+func (*Field) instrNode()       {}
+func (*Sequence) instrNode()    {}
+func (*Group) instrNode()       {}
+func (*TemplateRef) instrNode() {}
+
+// TemplateRef is a template reference instruction (§6.4). A static reference
+// (Name set) is replaced by inlining the named template's instructions during
+// parsing, so it does not survive into a fully-resolved Schema. A dynamic
+// reference (Name empty) selects a template by an id carried in the stream and
+// is left in place for the consumer to handle.
+type TemplateRef struct {
+	Name    string
+	Dynamic bool
+}
 
 // Field is a scalar, string, binary, or FAST 1.2 extension field.
 type Field struct {

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.1">
+  <template name="Common" id="100">
+    <uInt32 name="seqNum" id="34"><increment/></uInt32>
+  </template>
+  <template name="Msg" id="7">
+    <uInt32 name="msgID" id="1"><copy/></uInt32>
+    <templateRef name="Common"/>
+  </template>
+</templates>
