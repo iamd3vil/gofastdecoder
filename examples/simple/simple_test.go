@@ -109,3 +109,69 @@ func TestRouterDispatch(t *testing.T) {
 		t.Fatalf("message 2 (copy): got (%d,%d,%d), want (10,20,30)", m.Field1, m.Field2, m.Field3)
 	}
 }
+
+// TestReset verifies that Reset() clears dictionary state: after it, a copy
+// field with no value in the stream and an undefined previous value (and no
+// initial) is a dynamic error rather than silently reusing stale state.
+func TestReset(t *testing.T) {
+	var dec TestDecoder
+	r := &fastcore.Reader{}
+
+	r.Reset([]byte{0xF0, 0x8A, 0x94, 0x9E}) // all present: 10,20,30
+	var m Test
+	if err := dec.Decode(r, &m); err != nil {
+		t.Fatal(err)
+	}
+	// Before reset, a copy-from-dictionary message succeeds.
+	r.Reset([]byte{0x80})
+	if err := dec.Decode(r, &m); err != nil {
+		t.Fatalf("pre-reset copy: %v", err)
+	}
+
+	dec.Reset()
+
+	// After reset the dictionary is undefined; copy with no initial is ERR D5.
+	r.Reset([]byte{0x80})
+	if err := dec.Decode(r, &m); err == nil {
+		t.Fatal("expected an error decoding from a reset (undefined) dictionary")
+	}
+}
+
+// TestRouterResetMessage drives a synthetic datagram: a Test message, then a
+// FAST reset control message (id 99), then another Test message. The reset
+// clears all dictionaries (including the template-id slot), so the message
+// after it must re-send its template id and field values.
+func TestRouterResetMessage(t *testing.T) {
+	rt := Router{ResetID: 99}
+	r := &fastcore.Reader{}
+
+	// PMAP 0xF8 = tid bit + 3 field bits set.
+	datagram := []byte{
+		0xF8, 0x81, 0x8A, 0x94, 0x9E, // tid 1, fields 10,20,30
+		0xC0, 0xE3, // reset: tid bit set, tid 99
+		0xF8, 0x81, 0xA8, 0xB2, 0xBC, // tid 1, fields 40,50,60
+	}
+	r.Reset(datagram)
+
+	got := make([][3]uint64, 0, 2)
+	resets := 0
+	for r.Remaining() > 0 {
+		msg, err := rt.Decode(r)
+		if err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if msg == nil { // FAST reset control message consumed
+			resets++
+			continue
+		}
+		m := msg.(*Test)
+		got = append(got, [3]uint64{m.Field1, m.Field2, m.Field3})
+	}
+	if resets != 1 {
+		t.Errorf("reset messages seen = %d, want 1", resets)
+	}
+	want := [][3]uint64{{10, 20, 30}, {40, 50, 60}}
+	if len(got) != 2 || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("messages = %v, want %v", got, want)
+	}
+}

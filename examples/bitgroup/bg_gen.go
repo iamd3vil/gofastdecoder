@@ -67,6 +67,12 @@ func (d *LevelDecoder) Decode(r *fastcore.Reader, m *Level) error {
 	return d.decodeLevel(r, &pm, m)
 }
 
+// Reset returns the decoder's dictionary to the undefined state. Call it when a
+// FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
+// with global dictionary scope).
+func (d *LevelDecoder) Reset() {
+}
+
 // isFASTMessage marks Level as a Message.
 func (*Level) isFASTMessage() {}
 
@@ -83,13 +89,28 @@ type Message interface{ isFASTMessage() }
 // value before calling Decode again. This reuse is what keeps decoding
 // allocation-free.
 type Router struct {
-	pmap     []byte
-	tidSlot  fastcore.UintSlot
+	pmap    []byte
+	tidSlot fastcore.UintSlot
+
+	// ResetID is the template id of the feed's FAST reset control message
+	// (e.g. 120 for T7 MDI/EMDI). When non-zero and a message with this id is
+	// decoded, Router resets all dictionaries and Decode returns (nil, nil).
+	// Leave it 0 to treat every id as a regular template.
+	ResetID  uint32
 	LevelDec LevelDecoder
 	LevelMsg Level
 }
 
-// Decode reads and decodes the next message from r.
+// Reset returns every dictionary (the template-id dictionary and all per-
+// template decoders) to the undefined state.
+func (rt *Router) Reset() {
+	rt.tidSlot.Reset()
+	rt.LevelDec.Reset()
+}
+
+// Decode reads and decodes the next message from r. On the FAST reset control
+// message (see ResetID) it resets all dictionaries and returns (nil, nil); the
+// caller should treat a nil Message as a consumed control message and continue.
 func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 	pm, err := r.ReadPMAP(rt.pmap)
 	if err != nil {
@@ -99,6 +120,10 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 	tid, _, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &rt.tidSlot)
 	if err != nil {
 		return nil, err
+	}
+	if rt.ResetID != 0 && tid == uint64(rt.ResetID) {
+		rt.Reset()
+		return nil, nil
 	}
 	switch tid {
 	case 5:

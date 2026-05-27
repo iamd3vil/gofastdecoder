@@ -69,11 +69,17 @@ type UintSlot struct {
 	Val   uint64
 }
 
+// Reset returns the slot to the undefined state (§6.3.1 dictionary reset).
+func (s *UintSlot) Reset() { *s = UintSlot{} }
+
 // IntSlot is a dictionary entry for a signed-integer field.
 type IntSlot struct {
 	State State
 	Val   int64
 }
+
+// Reset returns the slot to the undefined state.
+func (s *IntSlot) Reset() { *s = IntSlot{} }
 
 // DecimalSlot is a dictionary entry for a decimal field, preserving the
 // exponent/mantissa layout the delta operator needs (§6.3.7.2 note).
@@ -82,6 +88,9 @@ type DecimalSlot struct {
 	Mant  int64
 	Exp   int32
 }
+
+// Reset returns the slot to the undefined state.
+func (s *DecimalSlot) Reset() { *s = DecimalSlot{} }
 
 // BytesSlot is a dictionary entry for a string or byte-vector field. The stored
 // slice is owned by the slot (copied on assignment) so it survives buffer reuse.
@@ -94,4 +103,11 @@ type BytesSlot struct {
 func (s *BytesSlot) set(b []byte) {
 	s.Val = append(s.Val[:0], b...)
 	s.State = Assigned
+}
+
+// Reset returns the slot to the undefined state, keeping the backing buffer for
+// reuse (so a dictionary reset between datagrams does not force reallocation).
+func (s *BytesSlot) Reset() {
+	s.State = Undefined
+	s.Val = s.Val[:0]
 }

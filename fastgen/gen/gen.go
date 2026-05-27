@@ -131,7 +131,10 @@ func (g *generator) templateBlock(t *ast.Template) (string, error) {
 		out.WriteString(m)
 		out.WriteString("\n")
 	}
-	if err := codeTemplates.ExecuteTemplate(&out, "decodeEntry", struct{ Name string }{name}); err != nil {
+	if err := codeTemplates.ExecuteTemplate(&out, "decodeEntry", struct {
+		Name  string
+		Slots []slotDecl
+	}{Name: name, Slots: g.slots}); err != nil {
 		return "", err
 	}
 	return out.String(), nil
