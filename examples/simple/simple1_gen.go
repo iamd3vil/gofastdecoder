@@ -3,6 +3,7 @@
 package simple
 
 import (
+	"fmt"
 	"github.com/iamd3vil/gofastdecoder/fastcore"
 )
 
@@ -22,12 +23,9 @@ type TestDecoder struct {
 	s_TestField3 fastcore.UintSlot
 }
 
-func (d *TestDecoder) decodeTest(r *fastcore.Reader, m *Test) error {
-	pm, err := r.ReadPMAP(d.pmap)
-	if err != nil {
-		return err
-	}
-	d.pmap = pm.Buffer()
+func (d *TestDecoder) decodeTest(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Test) error {
+	pm := *pmArg
+	_ = pm
 	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField1); err != nil {
 		return err
 	} else if present {
@@ -46,7 +44,53 @@ func (d *TestDecoder) decodeTest(r *fastcore.Reader, m *Test) error {
 	return nil
 }
 
-// Decode decodes one Test message from r into m.
+// Decode decodes one Test message from r into m. Use this when the template
+// is already known and the stream carries no template-id framing; otherwise use
+// a Router.
 func (d *TestDecoder) Decode(r *fastcore.Reader, m *Test) error {
-	return d.decodeTest(r, m)
+	pm, err := r.ReadPMAP(d.pmap)
+	if err != nil {
+		return err
+	}
+	d.pmap = pm.Buffer()
+	return d.decodeTest(r, &pm, m)
+}
+
+// isFASTMessage marks Test as a Message.
+func (*Test) isFASTMessage() {}
+
+// Message is any FAST message decoded by Router in this package.
+type Message interface{ isFASTMessage() }
+
+// Router decodes a stream of FAST messages, dispatching on the template id. It
+// is reusable; its template-id dictionary and per-template decoders persist
+// across messages. Decode returns a pointer to a reused per-template struct, so
+// the result is only valid until the next Decode call.
+type Router struct {
+	pmap    []byte
+	tidSlot fastcore.UintSlot
+	TestDec TestDecoder
+	TestMsg Test
+}
+
+// Decode reads and decodes the next message from r.
+func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
+	pm, err := r.ReadPMAP(rt.pmap)
+	if err != nil {
+		return nil, err
+	}
+	rt.pmap = pm.Buffer()
+	tid, _, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &rt.tidSlot)
+	if err != nil {
+		return nil, err
+	}
+	switch tid {
+	case 1:
+		if err := rt.TestDec.decodeTest(r, &pm, &rt.TestMsg); err != nil {
+			return nil, err
+		}
+		return &rt.TestMsg, nil
+	default:
+		return nil, fmt.Errorf("fast: unknown template id %d", tid)
+	}
 }

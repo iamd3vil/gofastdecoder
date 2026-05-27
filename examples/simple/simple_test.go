@@ -69,3 +69,43 @@ func TestZeroAlloc(t *testing.T) {
 		t.Errorf("decode allocates %.0f times/op, want 0", n)
 	}
 }
+
+// TestRouterDispatch decodes framed messages through the generated Router: the
+// presence map's bit 0 plus a global-dictionary copy carries the template id,
+// and the remaining bits drive the template's fields. The second message omits
+// both the template id and all field values, exercising copy-from-dictionary
+// for the template id and every field across messages.
+func TestRouterDispatch(t *testing.T) {
+	var rt Router
+	r := &fastcore.Reader{}
+
+	// Message 1: PMAP 0xF8 = bits 0,1,2,3 set (tid present + 3 fields present);
+	// tid=1 (0x81), then field values 10 (0x8A), 20 (0x94), 30 (0x9E).
+	r.Reset([]byte{0xF8, 0x81, 0x8A, 0x94, 0x9E})
+	msg, err := rt.Decode(r)
+	if err != nil {
+		t.Fatalf("message 1: %v", err)
+	}
+	m, ok := msg.(*Test)
+	if !ok {
+		t.Fatalf("message 1: got %T, want *Test", msg)
+	}
+	if m.Field1 != 10 || m.Field2 != 20 || m.Field3 != 30 {
+		t.Fatalf("message 1: got (%d,%d,%d), want (10,20,30)", m.Field1, m.Field2, m.Field3)
+	}
+
+	// Message 2: PMAP 0x80 = no bits set; the template id copies to 1 and every
+	// field copies its previous value.
+	r.Reset([]byte{0x80})
+	msg, err = rt.Decode(r)
+	if err != nil {
+		t.Fatalf("message 2: %v", err)
+	}
+	m, ok = msg.(*Test)
+	if !ok {
+		t.Fatalf("message 2: got %T, want *Test", msg)
+	}
+	if m.Field1 != 10 || m.Field2 != 20 || m.Field3 != 30 {
+		t.Fatalf("message 2 (copy): got (%d,%d,%d), want (10,20,30)", m.Field1, m.Field2, m.Field3)
+	}
+}

@@ -3,6 +3,7 @@
 package ext12
 
 import (
+	"fmt"
 	"github.com/iamd3vil/gofastdecoder/fastcore"
 	"time"
 )
@@ -23,12 +24,9 @@ type ExtDecoder struct {
 	s_ExtKind fastcore.UintSlot
 }
 
-func (d *ExtDecoder) decodeExt(r *fastcore.Reader, m *Ext) error {
-	pm, err := r.ReadPMAP(d.pmap)
-	if err != nil {
-		return err
-	}
-	d.pmap = pm.Buffer()
+func (d *ExtDecoder) decodeExt(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Ext) error {
+	pm := *pmArg
+	_ = pm
 	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtFlag); err != nil {
 		return err
 	} else if present {
@@ -47,7 +45,53 @@ func (d *ExtDecoder) decodeExt(r *fastcore.Reader, m *Ext) error {
 	return nil
 }
 
-// Decode decodes one Ext message from r into m.
+// Decode decodes one Ext message from r into m. Use this when the template
+// is already known and the stream carries no template-id framing; otherwise use
+// a Router.
 func (d *ExtDecoder) Decode(r *fastcore.Reader, m *Ext) error {
-	return d.decodeExt(r, m)
+	pm, err := r.ReadPMAP(d.pmap)
+	if err != nil {
+		return err
+	}
+	d.pmap = pm.Buffer()
+	return d.decodeExt(r, &pm, m)
+}
+
+// isFASTMessage marks Ext as a Message.
+func (*Ext) isFASTMessage() {}
+
+// Message is any FAST message decoded by Router in this package.
+type Message interface{ isFASTMessage() }
+
+// Router decodes a stream of FAST messages, dispatching on the template id. It
+// is reusable; its template-id dictionary and per-template decoders persist
+// across messages. Decode returns a pointer to a reused per-template struct, so
+// the result is only valid until the next Decode call.
+type Router struct {
+	pmap    []byte
+	tidSlot fastcore.UintSlot
+	ExtDec  ExtDecoder
+	ExtMsg  Ext
+}
+
+// Decode reads and decodes the next message from r.
+func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
+	pm, err := r.ReadPMAP(rt.pmap)
+	if err != nil {
+		return nil, err
+	}
+	rt.pmap = pm.Buffer()
+	tid, _, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &rt.tidSlot)
+	if err != nil {
+		return nil, err
+	}
+	switch tid {
+	case 3:
+		if err := rt.ExtDec.decodeExt(r, &pm, &rt.ExtMsg); err != nil {
+			return nil, err
+		}
+		return &rt.ExtMsg, nil
+	default:
+		return nil, fmt.Errorf("fast: unknown template id %d", tid)
+	}
 }

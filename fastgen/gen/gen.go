@@ -27,13 +27,25 @@ func Generate(s *ast.Schema, pkg string) ([]byte, error) {
 		"github.com/iamd3vil/gofastdecoder/fastcore": true,
 	}}
 
-	blocks := make([]string, 0, len(s.Templates))
+	blocks := make([]string, 0, len(s.Templates)+1)
+	var routerTemplates []routerEntry
 	for _, t := range s.Templates {
 		blk, err := g.templateBlock(t)
 		if err != nil {
 			return nil, fmt.Errorf("template %q: %w", t.Name, err)
 		}
 		blocks = append(blocks, blk)
+		routerTemplates = append(routerTemplates, routerEntry{Name: exported(t.Name), ID: t.ID})
+	}
+
+	// A Router over all templates: dispatches on the template id (PMAP bit 0).
+	if len(routerTemplates) > 0 {
+		g.imports["fmt"] = true
+		router, err := render("router", struct{ Templates []routerEntry }{routerTemplates})
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, router)
 	}
 
 	imports := make([]string, 0, len(g.imports))
@@ -59,11 +71,18 @@ func Generate(s *ast.Schema, pkg string) ([]byte, error) {
 type generator struct {
 	imports    map[string]bool
 	slots      []slotDecl // accumulated for the template currently being emitted
+	pmaps      []string   // nested-segment PMAP buffer field names for the current template
 	topDecoder string     // receiver type name for the current template's methods
 	methods    []string   // rendered method bodies for the current template
 }
 
 type slotDecl struct{ Name, Type string }
+
+// routerEntry is one template the generated Router can dispatch to.
+type routerEntry struct {
+	Name string
+	ID   uint32
+}
 
 // --- views passed to templates.go ---
 
@@ -82,6 +101,7 @@ type structFieldView struct {
 }
 type decoderView struct {
 	Name  string
+	Pmaps []string
 	Slots []slotDecl
 }
 
@@ -89,6 +109,7 @@ type decoderView struct {
 func (g *generator) templateBlock(t *ast.Template) (string, error) {
 	name := exported(t.Name)
 	g.slots = g.slots[:0]
+	g.pmaps = g.pmaps[:0]
 	g.methods = g.methods[:0]
 	g.topDecoder = name
 
@@ -96,13 +117,13 @@ func (g *generator) templateBlock(t *ast.Template) (string, error) {
 	if err := g.renderStructs(&structs, name, t.Instructions); err != nil {
 		return "", err
 	}
-	if err := g.renderMethod(name, t.Instructions); err != nil {
+	if err := g.renderMethod(name, t.Instructions, true, ""); err != nil {
 		return "", err
 	}
 
 	var out strings.Builder
 	out.WriteString(structs.String())
-	if err := codeTemplates.ExecuteTemplate(&out, "decoder", decoderView{Name: name, Slots: g.slots}); err != nil {
+	if err := codeTemplates.ExecuteTemplate(&out, "decoder", decoderView{Name: name, Pmaps: g.pmaps, Slots: g.slots}); err != nil {
 		return "", err
 	}
 	out.WriteString("\n")
@@ -158,8 +179,10 @@ func (g *generator) renderStructs(w *strings.Builder, name string, instrs []ast.
 }
 
 // renderMethod renders one segment's decode method (recursing into nested
-// sequences/groups, whose methods are appended to g.methods).
-func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction) error {
+// sequences/groups, whose methods are appended to g.methods). A top-level
+// template body receives its presence map from the caller (Router or Decode);
+// a nested segment reads its own into the dedicated buffer field.
+func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction, topLevel bool, bufName string) error {
 	steps := make([]string, 0, len(instrs))
 	var nested []func() error
 	for _, in := range instrs {
@@ -174,10 +197,19 @@ func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction) er
 	}
 
 	var body strings.Builder
-	if err := codeTemplates.ExecuteTemplate(&body, "method", struct {
-		Recv, Name, Struct string
-		Steps              []string
-	}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Steps: steps}); err != nil {
+	var err error
+	if topLevel {
+		err = codeTemplates.ExecuteTemplate(&body, "methodTop", struct {
+			Recv, Name, Struct string
+			Steps              []string
+		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Steps: steps})
+	} else {
+		err = codeTemplates.ExecuteTemplate(&body, "methodNested", struct {
+			Recv, Name, Struct, Buf string
+			Steps                   []string
+		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Buf: bufName, Steps: steps})
+	}
+	if err != nil {
 		return err
 	}
 	g.methods = append(g.methods, body.String())
@@ -188,6 +220,14 @@ func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction) er
 		}
 	}
 	return nil
+}
+
+// nestedMethod registers a PMAP buffer field for a nested segment and renders
+// its method.
+func (g *generator) nestedMethod(slotPrefix string, instrs []ast.Instruction) error {
+	buf := "pmap_" + sanitize(slotPrefix)
+	g.pmaps = append(g.pmaps, buf)
+	return g.renderMethod(slotPrefix, instrs, false, buf)
 }
 
 // step renders the decode statement for one instruction, returning the rendered
@@ -203,7 +243,7 @@ func (g *generator) step(slotPrefix string, in ast.Instruction) (string, func() 
 			Field, Method string
 			Optional      bool
 		}{Field: gname, Method: slotPrefix + gname, Optional: x.Presence == ast.Optional})
-		return s, func() error { return g.renderMethod(slotPrefix+gname, x.Instructions) }, err
+		return s, func() error { return g.nestedMethod(slotPrefix+gname, x.Instructions) }, err
 	case *ast.Sequence:
 		return g.sequenceStep(slotPrefix, x)
 	}
@@ -227,7 +267,7 @@ func (g *generator) sequenceStep(slotPrefix string, s *ast.Sequence) (string, fu
 		Field, Elem, Op, Init, LenSlot string
 		Optional, HasInit              bool
 	}{Field: sname, Elem: elem, Op: op, Init: initExpr, LenSlot: lenSlot, Optional: s.Presence == ast.Optional, HasInit: hasInit})
-	return out, func() error { return g.renderMethod(elem, s.Instructions) }, err
+	return out, func() error { return g.nestedMethod(elem, s.Instructions) }, err
 }
 
 // fieldStep renders the decode statement for a scalar/string/binary field.

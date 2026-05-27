@@ -33,26 +33,91 @@ type {{.Name}} struct {
 // dictionary state persists as the field operators require.
 type {{.Name}}Decoder struct {
 	pmap []byte
-{{range .Slots}}	{{.Name}} {{.Type}}
+{{range .Pmaps}}	{{.}} []byte
+{{end}}{{range .Slots}}	{{.Name}} {{.Type}}
 {{end}}}
 {{- end -}}
 
-{{- define "method" -}}
+{{/* methodTop: a top-level template body. The presence map is supplied by the
+caller (Decode or the Router), which has already consumed the template-id bit. */}}
+{{- define "methodTop" -}}
+func (d *{{.Recv}}Decoder) {{.Name}}(r *fastcore.Reader, pmArg *fastcore.PMAP, m *{{.Struct}}) error {
+	pm := *pmArg
+	_ = pm
+{{range .Steps}}{{.}}
+{{end}}	return nil
+}
+{{- end -}}
+
+{{/* methodNested: a group or sequence-element segment, which reads its own
+presence map into a dedicated buffer so it never clobbers a parent's PMAP. */}}
+{{- define "methodNested" -}}
 func (d *{{.Recv}}Decoder) {{.Name}}(r *fastcore.Reader, m *{{.Struct}}) error {
-	pm, err := r.ReadPMAP(d.pmap)
+	pm, err := r.ReadPMAP(d.{{.Buf}})
 	if err != nil {
 		return err
 	}
-	d.pmap = pm.Buffer()
+	d.{{.Buf}} = pm.Buffer()
 {{range .Steps}}{{.}}
 {{end}}	return nil
 }
 {{- end -}}
 
 {{- define "decodeEntry" -}}
-// Decode decodes one {{.Name}} message from r into m.
+// Decode decodes one {{.Name}} message from r into m. Use this when the template
+// is already known and the stream carries no template-id framing; otherwise use
+// a Router.
 func (d *{{.Name}}Decoder) Decode(r *fastcore.Reader, m *{{.Name}}) error {
-	return d.decode{{.Name}}(r, m)
+	pm, err := r.ReadPMAP(d.pmap)
+	if err != nil {
+		return err
+	}
+	d.pmap = pm.Buffer()
+	return d.decode{{.Name}}(r, &pm, m)
+}
+
+// isFASTMessage marks {{.Name}} as a Message.
+func (*{{.Name}}) isFASTMessage() {}
+{{- end -}}
+
+{{/* router: reads a message presence map, decodes the template id (a global-
+dictionary copy occupying PMAP bit 0, §10.3), and dispatches to the matching
+template body, which then consumes the remaining PMAP bits. */}}
+{{- define "router" -}}
+// Message is any FAST message decoded by Router in this package.
+type Message interface{ isFASTMessage() }
+
+// Router decodes a stream of FAST messages, dispatching on the template id. It
+// is reusable; its template-id dictionary and per-template decoders persist
+// across messages. Decode returns a pointer to a reused per-template struct, so
+// the result is only valid until the next Decode call.
+type Router struct {
+	pmap    []byte
+	tidSlot fastcore.UintSlot
+{{range .Templates}}	{{.Name}}Dec {{.Name}}Decoder
+	{{.Name}}Msg {{.Name}}
+{{end}}}
+
+// Decode reads and decodes the next message from r.
+func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
+	pm, err := r.ReadPMAP(rt.pmap)
+	if err != nil {
+		return nil, err
+	}
+	rt.pmap = pm.Buffer()
+	tid, _, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &rt.tidSlot)
+	if err != nil {
+		return nil, err
+	}
+	switch tid {
+{{range .Templates}}	case {{.ID}}:
+		if err := rt.{{.Name}}Dec.decode{{.Name}}(r, &pm, &rt.{{.Name}}Msg); err != nil {
+			return nil, err
+		}
+		return &rt.{{.Name}}Msg, nil
+{{end}}	default:
+		return nil, fmt.Errorf("fast: unknown template id %d", tid)
+	}
 }
 {{- end -}}
 
