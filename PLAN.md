@@ -59,27 +59,37 @@ oracle *before* a line of `fastcore` is written.
 
 ## Build sequence (each step verifiable)
 
-1. **`fastcore` transport** — stop-bit reader, PMAP cursor, nullable
-   int/uint/ascii/unicode/byteVector, decimal. Tests from spec Appendix-3
-   examples + hand vectors.
-2. **`fastcore` operators + dictionaries** — implement the operator state
-   machine; wire `fastcore` to `vectors.Decoder` and turn the 53-vector corpus
-   green. **This is the correctness milestone.**
-3. **`fastgen` parser + AST** — parse legacy 1.1 XML, apply the 1.2 desugaring
-   rule, resolve `<define>`/`<type>`, validate against the RELAX NG schema
-   (spec Appendix 1).
-4. **`fastgen` emitter** — generate structs + `Decode` for templates, sequences,
-   groups. Round-trip: generate from `testdata/mfast/templates`, compile, decode.
-5. **1.2 types** — `enum`, `set`, `boolean`, `timestamp` (→ `time.Time`) in
-   both `fastcore` and `fastgen`. Add feature vectors transcribed from mFAST
-   (`enum_*`, `set_*`, `timestamp_*`).
-6. **`bitGroup`** — sub-byte bit cursor (cross-byte spanning, min-bits per
-   enum/set), packing layout in `fastgen`. Dedicated bit-level tests.
-7. **Structural decode** — message PMAP, sequences, groups end-to-end; add
-   `sequence_*`/`group_*`/`pmap_*` vectors.
-8. **Example + benchmarks** — a real template set under `examples/` with
-   `//go:generate`, decoding captured frames; `0 allocs/op` benchmark gate.
-9. **Docs** — README on the core/gen split and supported template syntax.
+1. **[DONE] `fastcore` transport** — stop-bit reader, PMAP cursor, nullable
+   int/uint/ascii/unicode/byteVector, decimal.
+2. **[DONE] `fastcore` operators + dictionaries** — operator state machine wired
+   to `vectors.Decoder`; the 53-vector corpus is green. **Correctness milestone.**
+3. **[DONE] `fastgen` parser + AST** — parses 1.1 + 1.2 XML, applies the 1.2
+   desugaring rule, resolves `<define>`/`<type>`; all 25 fixtures parse.
+   _Gap:_ `<templateRef>`, `<view>`, and vendor types are skipped.
+4. **[DONE] `fastgen` emitter** — generates structs + decoders for scalars,
+   sequences, and groups (view-model + `text/template`); 24/25 fixtures emit
+   valid Go; `examples/simple` round-trips and `go:generate` is reproducible.
+5. **[DONE] 1.2 types** — `enum`, `set`, `boolean`, `timestamp` (→ `time.Time`)
+   in both `fastcore` and `fastgen`; verified end-to-end by `examples/ext12`.
+   _Remaining:_ transcribe mFAST feature vectors (`enum_*`/`set_*`/`timestamp_*`)
+   for byte-level message verification; typed Go enums (currently `uint64`).
+6. **[TODO] `bitGroup`** — `fastcore.BitReader` exists and is unit-tested
+   (spec layout example); parser+emitter wiring of packed sub-fields and the
+   `intN/uIntN` sub-types is not done.
+7. **[partial] Structural decode** — sequences and groups emit and decode;
+   _remaining:_ message-level template-identifier dispatch (PMAP bit 0 + global
+   tid copy) and a multi-template router; structural vectors from mFAST.
+8. **[DONE] Example + benchmarks** — `examples/simple` + `examples/ext12` with
+   `//go:generate`; `0 allocs/op` proven and gated by `TestZeroAlloc`.
+9. **[DONE] Docs** — `README.md` on the core/gen split, usage, and coverage.
+
+### Remaining work, prioritized
+- Message framing: template-id dispatch + a router over multiple templates
+  (step 7) — needed to decode real multi-template feed captures.
+- `bitGroup` end-to-end (step 6).
+- Decimal with individual exponent/mantissa operators (unblocks `test2.xml`).
+- `<templateRef>` support in parser + emitter.
+- mFAST feature/structural vector transcription for byte-level verification.
 
 ## Pending inputs (non-blocking)
 
