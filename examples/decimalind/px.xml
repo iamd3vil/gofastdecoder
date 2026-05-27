@@ -6,4 +6,10 @@
       <mantissa><delta/></mantissa>
     </decimal>
   </template>
+  <template name="OptPx" id="8">
+    <decimal name="size" presence="optional">
+      <exponent><copy/></exponent>
+      <mantissa><copy/></mantissa>
+    </decimal>
+  </template>
 </templates>

@@ -75,8 +75,13 @@ type Message interface{ isFASTMessage() }
 
 // Router decodes a stream of FAST messages, dispatching on the template id. It
 // is reusable; its template-id dictionary and per-template decoders persist
-// across messages. Decode returns a pointer to a reused per-template struct, so
-// the result is only valid until the next Decode call.
+// across messages.
+//
+// Decode returns a pointer into a per-template struct that Decode REUSES on the
+// next call for the same template. The returned Message is therefore only valid
+// until the next Decode call: to retain a message, type-assert it and copy the
+// value before calling Decode again. This reuse is what keeps decoding
+// allocation-free.
 type Router struct {
 	pmap     []byte
 	tidSlot  fastcore.UintSlot

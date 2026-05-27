@@ -24,3 +24,23 @@ func TestStaticTemplateRef(t *testing.T) {
 		t.Errorf("SeqNum = %d, want 1", m.SeqNum)
 	}
 }
+
+// TestTemplateRefInGroup exercises static templateRef inlining inside a group
+// (a nested segment with its own presence map).
+func TestTemplateRefInGroup(t *testing.T) {
+	var dec WrapDecoder
+	// message PMAP 0xC0 (msgID copy present), msgID 10 (0x8A); then the
+	// mandatory group reads its own PMAP 0xC0 (seqNum increment present),
+	// seqNum 1 (0x81).
+	r := fastcore.NewReader([]byte{0xC0, 0x8A, 0xC0, 0x81})
+	var m Wrap
+	if err := dec.Decode(r, &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.MsgID != 10 {
+		t.Errorf("MsgID = %d, want 10", m.MsgID)
+	}
+	if m.Hdr.SeqNum != 1 {
+		t.Errorf("Hdr.SeqNum = %d, want 1", m.Hdr.SeqNum)
+	}
+}

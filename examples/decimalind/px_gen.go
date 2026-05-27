@@ -50,18 +50,71 @@ func (d *PxDecoder) Decode(r *fastcore.Reader, m *Px) error {
 // isFASTMessage marks Px as a Message.
 func (*Px) isFASTMessage() {}
 
+// OptPx is a decoded FAST message/group.
+type OptPx struct {
+	Size    fastcore.Decimal
+	HasSize bool
+}
+
+// OptPxDecoder decodes OptPx messages. Reuse it across messages; its
+// dictionary state persists as the field operators require.
+type OptPxDecoder struct {
+	pmap            []byte
+	s_OptPxSizeExp  fastcore.IntSlot
+	s_OptPxSizeMant fastcore.IntSlot
+}
+
+func (d *OptPxDecoder) decodeOptPx(r *fastcore.Reader, pmArg *fastcore.PMAP, m *OptPx) error {
+	pm := *pmArg
+	_ = pm
+	m.HasSize = false
+	if exp, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W32, true, false, 0, &d.s_OptPxSizeExp); err != nil {
+		return err
+	} else if present {
+		mant, _, merr := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_OptPxSizeMant)
+		if merr != nil {
+			return merr
+		}
+		m.Size = fastcore.Decimal{Mant: mant, Exp: int32(exp)}
+		m.HasSize = true
+	}
+	return nil
+}
+
+// Decode decodes one OptPx message from r into m. Use this when the template
+// is already known and the stream carries no template-id framing; otherwise use
+// a Router.
+func (d *OptPxDecoder) Decode(r *fastcore.Reader, m *OptPx) error {
+	pm, err := r.ReadPMAP(d.pmap)
+	if err != nil {
+		return err
+	}
+	d.pmap = pm.Buffer()
+	return d.decodeOptPx(r, &pm, m)
+}
+
+// isFASTMessage marks OptPx as a Message.
+func (*OptPx) isFASTMessage() {}
+
 // Message is any FAST message decoded by Router in this package.
 type Message interface{ isFASTMessage() }
 
 // Router decodes a stream of FAST messages, dispatching on the template id. It
 // is reusable; its template-id dictionary and per-template decoders persist
-// across messages. Decode returns a pointer to a reused per-template struct, so
-// the result is only valid until the next Decode call.
+// across messages.
+//
+// Decode returns a pointer into a per-template struct that Decode REUSES on the
+// next call for the same template. The returned Message is therefore only valid
+// until the next Decode call: to retain a message, type-assert it and copy the
+// value before calling Decode again. This reuse is what keeps decoding
+// allocation-free.
 type Router struct {
-	pmap    []byte
-	tidSlot fastcore.UintSlot
-	PxDec   PxDecoder
-	PxMsg   Px
+	pmap     []byte
+	tidSlot  fastcore.UintSlot
+	PxDec    PxDecoder
+	PxMsg    Px
+	OptPxDec OptPxDecoder
+	OptPxMsg OptPx
 }
 
 // Decode reads and decodes the next message from r.
@@ -81,6 +134,11 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 			return nil, err
 		}
 		return &rt.PxMsg, nil
+	case 8:
+		if err := rt.OptPxDec.decodeOptPx(r, &pm, &rt.OptPxMsg); err != nil {
+			return nil, err
+		}
+		return &rt.OptPxMsg, nil
 	default:
 		return nil, fmt.Errorf("fast: unknown template id %d", tid)
 	}

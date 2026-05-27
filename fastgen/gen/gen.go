@@ -207,18 +207,20 @@ func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction, to
 		}
 	}
 
+	resets := optionalHasFields(instrs)
+
 	var body strings.Builder
 	var err error
 	if topLevel {
 		err = codeTemplates.ExecuteTemplate(&body, "methodTop", struct {
 			Recv, Name, Struct string
-			Steps              []string
-		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Steps: steps})
+			Resets, Steps      []string
+		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Resets: resets, Steps: steps})
 	} else {
 		err = codeTemplates.ExecuteTemplate(&body, "methodNested", struct {
 			Recv, Name, Struct, Buf string
-			Steps                   []string
-		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Buf: bufName, Steps: steps})
+			Resets, Steps           []string
+		}{Recv: g.topDecoder, Name: "decode" + slotPrefix, Struct: slotPrefix, Buf: bufName, Resets: resets, Steps: steps})
 	}
 	if err != nil {
 		return err
@@ -231,6 +233,27 @@ func (g *generator) renderMethod(slotPrefix string, instrs []ast.Instruction, to
 		}
 	}
 	return nil
+}
+
+// optionalHasFields returns the exported Has-flag field names for the optional
+// fields and groups directly in instrs. The decode method clears these at the
+// start so a reused message struct does not report a field as present when it
+// is absent in the current message.
+func optionalHasFields(instrs []ast.Instruction) []string {
+	var out []string
+	for _, in := range instrs {
+		switch x := in.(type) {
+		case *ast.Field:
+			if x.Presence == ast.Optional && x.Type != ast.BitGroup {
+				out = append(out, "Has"+exported(x.Name))
+			}
+		case *ast.Group:
+			if x.Presence == ast.Optional {
+				out = append(out, "Has"+exported(x.Name))
+			}
+		}
+	}
+	return out
 }
 
 // nestedMethod registers a PMAP buffer field for a nested segment and renders
@@ -356,7 +379,7 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 // mandatory, present only when the exponent is present (§10.5.1).
 func (g *generator) decimalIndividualStep(slotPrefix string, f *ast.Field, optional bool) (string, error) {
 	fname := exported(f.Name)
-	expSlot := g.addSlot(slotPrefix+fname+"Exp", &ast.Field{Type: ast.Int64})
+	expSlot := g.addSlot(slotPrefix+fname+"Exp", &ast.Field{Type: ast.Int32})
 	mantSlot := g.addSlot(slotPrefix+fname+"Mant", &ast.Field{Type: ast.Int64})
 
 	expOp, expHas, expInit := opIntParts(f.Exponent)

@@ -90,13 +90,81 @@ func (d *MsgDecoder) Decode(r *fastcore.Reader, m *Msg) error {
 // isFASTMessage marks Msg as a Message.
 func (*Msg) isFASTMessage() {}
 
+// WrapHdr is a decoded FAST message/group.
+type WrapHdr struct {
+	SeqNum uint64
+}
+
+// Wrap is a decoded FAST message/group.
+type Wrap struct {
+	MsgID uint64
+	Hdr   WrapHdr
+}
+
+// WrapDecoder decodes Wrap messages. Reuse it across messages; its
+// dictionary state persists as the field operators require.
+type WrapDecoder struct {
+	pmap            []byte
+	pmap_WrapHdr    []byte
+	s_WrapMsgID     fastcore.UintSlot
+	s_WrapHdrSeqNum fastcore.UintSlot
+}
+
+func (d *WrapDecoder) decodeWrap(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Wrap) error {
+	pm := *pmArg
+	_ = pm
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_WrapMsgID); err != nil {
+		return err
+	} else if present {
+		m.MsgID = v
+	}
+	if err := d.decodeWrapHdr(r, &m.Hdr); err != nil {
+		return err
+	}
+
+	return nil
+}
+func (d *WrapDecoder) decodeWrapHdr(r *fastcore.Reader, m *WrapHdr) error {
+	pm, err := r.ReadPMAP(d.pmap_WrapHdr)
+	if err != nil {
+		return err
+	}
+	d.pmap_WrapHdr = pm.Buffer()
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_WrapHdrSeqNum); err != nil {
+		return err
+	} else if present {
+		m.SeqNum = v
+	}
+	return nil
+}
+
+// Decode decodes one Wrap message from r into m. Use this when the template
+// is already known and the stream carries no template-id framing; otherwise use
+// a Router.
+func (d *WrapDecoder) Decode(r *fastcore.Reader, m *Wrap) error {
+	pm, err := r.ReadPMAP(d.pmap)
+	if err != nil {
+		return err
+	}
+	d.pmap = pm.Buffer()
+	return d.decodeWrap(r, &pm, m)
+}
+
+// isFASTMessage marks Wrap as a Message.
+func (*Wrap) isFASTMessage() {}
+
 // Message is any FAST message decoded by Router in this package.
 type Message interface{ isFASTMessage() }
 
 // Router decodes a stream of FAST messages, dispatching on the template id. It
 // is reusable; its template-id dictionary and per-template decoders persist
-// across messages. Decode returns a pointer to a reused per-template struct, so
-// the result is only valid until the next Decode call.
+// across messages.
+//
+// Decode returns a pointer into a per-template struct that Decode REUSES on the
+// next call for the same template. The returned Message is therefore only valid
+// until the next Decode call: to retain a message, type-assert it and copy the
+// value before calling Decode again. This reuse is what keeps decoding
+// allocation-free.
 type Router struct {
 	pmap      []byte
 	tidSlot   fastcore.UintSlot
@@ -104,6 +172,8 @@ type Router struct {
 	CommonMsg Common
 	MsgDec    MsgDecoder
 	MsgMsg    Msg
+	WrapDec   WrapDecoder
+	WrapMsg   Wrap
 }
 
 // Decode reads and decodes the next message from r.
@@ -128,6 +198,11 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 			return nil, err
 		}
 		return &rt.MsgMsg, nil
+	case 9:
+		if err := rt.WrapDec.decodeWrap(r, &pm, &rt.WrapMsg); err != nil {
+			return nil, err
+		}
+		return &rt.WrapMsg, nil
 	default:
 		return nil, fmt.Errorf("fast: unknown template id %d", tid)
 	}

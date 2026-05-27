@@ -951,12 +951,7 @@ func (p *parser) parseBitGroupElement(dec *xml.Decoder, ri rawInstruction) (rawI
 				if err != nil {
 					return ri, err
 				}
-				if ln == "constant" || ln == "default" || ln == "copy" ||
-					ln == "increment" || ln == "delta" || ln == "tail" {
-					ri.op = sub.op
-				} else {
-					ri.bitGroupInstructions = append(ri.bitGroupInstructions, sub)
-				}
+				ri.bitGroupInstructions = append(ri.bitGroupInstructions, sub)
 			}
 		}
 	}

@@ -7,4 +7,10 @@
     <uInt32 name="msgID" id="1"><copy/></uInt32>
     <templateRef name="Common"/>
   </template>
+  <template name="Wrap" id="9">
+    <uInt32 name="msgID" id="1"><copy/></uInt32>
+    <group name="hdr">
+      <templateRef name="Common"/>
+    </group>
+  </template>
 </templates>
