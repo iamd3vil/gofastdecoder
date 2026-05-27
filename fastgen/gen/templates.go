@@ -173,9 +173,14 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{end}}	}
 {{- end -}}
 
-{{/* enums: generated Go named types and value constants for enum/set fields. */}}
+{{/* enums: generated Go named types and value constants for enum/set fields.
+The constant value is the FAST wire-encoded value — the element's index for an
+enum (§FAST 1.2: values are "represented by an index"), or its bit for a set —
+so a decoded field compares directly against these constants. (For feeds like
+T7 MDI the element name is the FIX value and id the description; the constant is
+named from id when present.) */}}
 {{- define "enums" -}}
-{{range .Enums}}// {{.Name}} is a generated FAST enum/set type.
+{{range .Enums}}// {{.Name}} is a generated FAST enum/set type. Constants hold the wire-encoded value.
 type {{.Name}} uint64
 
 const (

@@ -1474,6 +1474,10 @@ func convertOp(r *rawOp) ast.Op {
 // Enum: 0, 1, 2, … (or explicit value= attr).
 // Set:  1, 2, 4, 8, … (powers of two).
 // When an explicit value= attr is present, it is used verbatim.
+// assignElementValues computes each element's wire-encoded value. Per the FAST
+// 1.2 enum/set encoding the wire carries the element's index (enum: 0,1,2,…;
+// set: bit 1,2,4,…), not the element's name — e.g. T7 MDI elements named
+// "1","3","5" encode as 0,1,2. An explicit value= attribute overrides this.
 func assignElementValues(elems []rawElem, bt ast.BaseType) []ast.Element {
 	out := make([]ast.Element, len(elems))
 	var auto int64
