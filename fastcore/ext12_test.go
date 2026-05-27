@@ -82,7 +82,7 @@ func TestDecodeIntSigned(t *testing.T) {
 	r := NewReader([]byte{0xC0, 0x82})
 	pm, _ := r.ReadPMAP(nil)
 	var slot IntSlot
-	v, present, err := DecodeInt(r, &pm, OpDelta, false, true, -5, &slot)
+	v, present, err := DecodeInt(r, &pm, OpDelta, W64, false, true, -5, &slot)
 	if err != nil || !present || v != -3 {
 		t.Fatalf("DecodeInt delta = %d present=%v err=%v, want -3", v, present, err)
 	}

@@ -4,8 +4,9 @@ package fastcore
 // int64 fields and as the underlying representation of timestamp fields, whose
 // value is a signed count of time units since an epoch (FAST 1.2).
 
-// DecodeInt decodes a signed integer field under op.
-func DecodeInt(r *Reader, pm *PMAP, op Operator, optional, hasInitial bool, initial int64, slot *IntSlot) (val int64, present bool, err error) {
+// DecodeInt decodes a signed integer field under op. width wraps the increment
+// operator at the type maximum (§6.3.6).
+func DecodeInt(r *Reader, pm *PMAP, op Operator, width IntWidth, optional, hasInitial bool, initial int64, slot *IntSlot) (val int64, present bool, err error) {
 	switch op {
 	case OpNone:
 		if optional {
@@ -71,7 +72,7 @@ func DecodeInt(r *Reader, pm *PMAP, op Operator, optional, hasInitial bool, init
 		switch slot.State {
 		case Assigned:
 			if op == OpIncrement {
-				slot.Val++
+				slot.Val = wrapInt(slot.Val+1, width)
 			}
 			return slot.Val, true, nil
 		case Undefined:

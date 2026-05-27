@@ -62,18 +62,27 @@ func (r *Reader) ReadNullableASCII() (s string, null bool, err error) {
 func interpretASCII(data []byte, nullable bool) (s string, null bool, err error) {
 	if nullable {
 		if len(data) == 1 && data[0] == 0 {
-			return "", true, nil
+			return "", true, nil // NULL
 		}
-		if len(data) > 0 && data[0] == 0 {
-			data = data[1:] // strip the nullable preamble
+		if data[0] == 0 {
+			// A nullable zero-preamble is only legal when the value it guards
+			// needs it: an empty string or a NUL-leading string. If the rest
+			// starts with a non-zero byte, the preamble was unnecessary and the
+			// encoding is overlong (§10.6.3 [ERR R9]).
+			rest := data[1:]
+			if rest[0] != 0 {
+				return "", false, ErrOverlong
+			}
+			data = rest
 		}
+		// else: no preamble — a plain non-nullable string follows.
 	}
 	if len(data) == 1 && data[0] == 0 {
 		return "", false, nil // empty string
 	}
 	if len(data) >= 2 && data[0] == 0 {
-		// Zero-preamble followed by content: the leading "\0" chars are real,
-		// but a non-zero second byte would make this an overlong encoding.
+		// Zero-preamble followed by content: leading "\0" chars are real, but a
+		// non-zero byte right after the preamble makes the encoding overlong.
 		if data[1] != 0 {
 			return "", false, ErrOverlong
 		}

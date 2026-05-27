@@ -116,3 +116,43 @@ func TestReadByteVector(t *testing.T) {
 		t.Errorf("ReadByteVector = %q err=%v", b, err)
 	}
 }
+
+// Regression tests for bugs found in review.
+
+func TestSignedOverflowGuard(t *testing.T) {
+	// More than 10 continuation groups cannot fit int64 -> ErrOverflow,
+	// rather than silently wrapping (review bug 1).
+	in := []byte{0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x81}
+	r := NewReader(in)
+	if _, err := r.ReadInt(); err != ErrOverflow {
+		t.Errorf("ReadInt(11 groups) err = %v, want ErrOverflow", err)
+	}
+}
+
+func TestIncrementWidthWrap(t *testing.T) {
+	// uInt32 at its max increments (no pmap bit) to 0, not 2^32 (review bug 2).
+	r := NewReader([]byte{0x80}) // pmap: increment bit clear
+	pm, _ := r.ReadPMAP(nil)
+	slot := UintSlot{State: Assigned, Val: 0xFFFFFFFF}
+	v, present, err := DecodeUint(r, &pm, OpIncrement, W32, false, true, 0, &slot)
+	if err != nil || !present || v != 0 {
+		t.Errorf("uInt32 increment wrap = %d present=%v err=%v, want 0", v, present, err)
+	}
+	// int32 max wraps to int32 min.
+	r = NewReader([]byte{0x80})
+	pm, _ = r.ReadPMAP(nil)
+	islot := IntSlot{State: Assigned, Val: 0x7FFFFFFF}
+	iv, _, err := DecodeInt(r, &pm, OpIncrement, W32, false, true, 0, &islot)
+	if err != nil || iv != -0x80000000 {
+		t.Errorf("int32 increment wrap = %d err=%v, want -2147483648", iv, err)
+	}
+}
+
+func TestOverlongNullableASCII(t *testing.T) {
+	// Nullable entity 0x00 0x41 is an overlong "A" (review bug 3): the nullable
+	// preamble was unnecessary for a non-NUL-leading string.
+	r := NewReader([]byte{0x00, 0xC1}) // data bytes 0x00, 0x41
+	if _, _, err := r.ReadNullableASCII(); err != ErrOverlong {
+		t.Errorf("ReadNullableASCII overlong err = %v, want ErrOverlong", err)
+	}
+}

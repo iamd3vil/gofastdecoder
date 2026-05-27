@@ -244,9 +244,9 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			return "", err
 		}
 		return render("fieldInt", struct {
-			Field, Op, Init, Slot, Unit    string
-			Optional, HasInit, IsTimestamp bool
-		}{Field: fname, Op: op, Init: initExpr, Slot: slot, Unit: unitExpr(f.Unit),
+			Field, Op, Width, Init, Slot, Unit string
+			Optional, HasInit, IsTimestamp     bool
+		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot, Unit: unitExpr(f.Unit),
 			Optional: optional, HasInit: hasInit, IsTimestamp: f.Type == ast.Timestamp})
 
 	case ast.UInt32, ast.UInt64, ast.Enum, ast.Set, ast.Boolean:
@@ -257,9 +257,9 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			return "", err
 		}
 		return render("fieldUint", struct {
-			Field, Op, Init, Slot     string
-			Optional, HasInit, IsBool bool
-		}{Field: fname, Op: op, Init: initExpr, Slot: slot,
+			Field, Op, Width, Init, Slot string
+			Optional, HasInit, IsBool    bool
+		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot,
 			Optional: optional, HasInit: hasInit, IsBool: f.Type == ast.Boolean})
 
 	case ast.Decimal:
@@ -402,6 +402,15 @@ func operatorExpr(k ast.OpKind) (string, bool) {
 	default:
 		return "fastcore.OpNone", false
 	}
+}
+
+// widthExpr returns the fastcore.IntWidth for a field type, so the generated
+// increment wraps at the right boundary (int32/uInt32 are 32-bit).
+func widthExpr(t ast.BaseType) string {
+	if t == ast.Int32 || t == ast.UInt32 {
+		return "fastcore.W32"
+	}
+	return "fastcore.W64"
 }
 
 func unitExpr(unit string) string {

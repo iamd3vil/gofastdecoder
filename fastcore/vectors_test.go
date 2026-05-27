@@ -52,7 +52,7 @@ func decodeUint(r *fastcore.Reader, pm *fastcore.PMAP, v vectors.OperatorVector,
 	if err != nil {
 		return vectors.Outcome{}, err
 	}
-	val, present, err := fastcore.DecodeUint(r, pm, op, optional, hasInitial, initial, &slot)
+	val, present, err := fastcore.DecodeUint(r, pm, op, fastcore.W64, optional, hasInitial, initial, &slot)
 	if err != nil {
 		return vectors.Outcome{}, err
 	}

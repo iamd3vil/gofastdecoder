@@ -29,17 +29,17 @@ func (d *ExtDecoder) decodeExt(r *fastcore.Reader, m *Ext) error {
 		return err
 	}
 	d.pmap = pm.Buffer()
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, false, false, 0, &d.s_ExtFlag); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtFlag); err != nil {
 		return err
 	} else if present {
 		m.Flag = fastcore.Bool(v)
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, false, false, 0, &d.s_ExtWhen); err != nil {
+	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtWhen); err != nil {
 		return err
 	} else if present {
 		m.When = fastcore.TimestampUTC(v, fastcore.UnitSecond)
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, false, false, 0, &d.s_ExtKind); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtKind); err != nil {
 		return err
 	} else if present {
 		m.Kind = v

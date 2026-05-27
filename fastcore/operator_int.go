@@ -11,8 +11,10 @@ package fastcore
 // Signed fields use DecodeInt with the same structure; the only differences are
 // the wire read (signed two's complement) and increment wrap behavior.
 
-// DecodeUint decodes an unsigned integer field under op.
-func DecodeUint(r *Reader, pm *PMAP, op Operator, optional, hasInitial bool, initial uint64, slot *UintSlot) (val uint64, present bool, err error) {
+// DecodeUint decodes an unsigned integer field under op. width is the field's
+// declared integer width, used only to wrap the increment operator at the type
+// maximum (§6.3.6).
+func DecodeUint(r *Reader, pm *PMAP, op Operator, width IntWidth, optional, hasInitial bool, initial uint64, slot *UintSlot) (val uint64, present bool, err error) {
 	switch op {
 	case OpNone:
 		if optional {
@@ -80,7 +82,7 @@ func DecodeUint(r *Reader, pm *PMAP, op Operator, optional, hasInitial bool, ini
 		switch slot.State {
 		case Assigned:
 			if op == OpIncrement {
-				slot.Val++
+				slot.Val = wrapUint(slot.Val+1, width)
 			}
 			return slot.Val, true, nil
 		case Undefined:

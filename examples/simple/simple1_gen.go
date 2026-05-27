@@ -28,17 +28,17 @@ func (d *TestDecoder) decodeTest(r *fastcore.Reader, m *Test) error {
 		return err
 	}
 	d.pmap = pm.Buffer()
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, false, false, 0, &d.s_TestField1); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField1); err != nil {
 		return err
 	} else if present {
 		m.Field1 = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, false, false, 0, &d.s_TestField2); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField2); err != nil {
 		return err
 	} else if present {
 		m.Field2 = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, false, false, 0, &d.s_TestField3); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField3); err != nil {
 		return err
 	} else if present {
 		m.Field3 = v

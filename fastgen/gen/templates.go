@@ -57,7 +57,7 @@ func (d *{{.Name}}Decoder) Decode(r *fastcore.Reader, m *{{.Name}}) error {
 {{- end -}}
 
 {{- define "fieldInt" -}}
-	if v, present, err := fastcore.DecodeInt(r, &pm, {{.Op}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
+	if v, present, err := fastcore.DecodeInt(r, &pm, {{.Op}}, {{.Width}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
 		return err
 	} else if present {
 {{if .IsTimestamp}}		m.{{.Field}} = fastcore.TimestampUTC(v, {{.Unit}})
@@ -67,7 +67,7 @@ func (d *{{.Name}}Decoder) Decode(r *fastcore.Reader, m *{{.Name}}) error {
 {{- end -}}
 
 {{- define "fieldUint" -}}
-	if v, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
+	if v, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, {{.Width}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
 		return err
 	} else if present {
 {{if .IsBool}}		m.{{.Field}} = fastcore.Bool(v)
@@ -136,7 +136,7 @@ func (d *{{.Name}}Decoder) Decode(r *fastcore.Reader, m *{{.Name}}) error {
 
 {{- define "sequence" -}}
 	{
-		n, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.LenSlot}})
+		n, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, fastcore.W32, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.LenSlot}})
 		if err != nil {
 			return err
 		}

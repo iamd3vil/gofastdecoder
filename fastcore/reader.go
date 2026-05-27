@@ -87,7 +87,11 @@ func (r *Reader) readEntitySigned() (int64, error) {
 		if groups > 10 {
 			return 0, ErrOverflow
 		}
-		val = (val << 7) | int64(b&0x7f)
+		shifted := val << 7
+		if shifted>>7 != val { // significant bits lost -> would not fit int64
+			return 0, ErrOverflow
+		}
+		val = shifted | int64(b&0x7f)
 		if b&0x80 != 0 {
 			return val, nil
 		}

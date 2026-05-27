@@ -37,6 +37,32 @@ var (
 	ErrD7 = errors.New("fastcore: [ERR D7] subtraction/tail length exceeds base")
 )
 
+// IntWidth is the declared width of an integer field, used so the increment
+// operator wraps at the type maximum rather than at 64 bits (§6.3.6).
+type IntWidth uint8
+
+const (
+	W64 IntWidth = 64 // int64 / uInt64 (and timestamp); no wrap before 2^64
+	W32 IntWidth = 32 // int32 / uInt32
+)
+
+// wrapUint wraps an incremented unsigned value to the field width.
+func wrapUint(v uint64, w IntWidth) uint64 {
+	if w == W32 {
+		return v & 0xFFFFFFFF
+	}
+	return v
+}
+
+// wrapInt wraps an incremented signed value to the field width (int32 max+1
+// becomes int32 min).
+func wrapInt(v int64, w IntWidth) int64 {
+	if w == W32 {
+		return int64(int32(v))
+	}
+	return v
+}
+
 // UintSlot is a dictionary entry for an unsigned-integer field.
 type UintSlot struct {
 	State State
