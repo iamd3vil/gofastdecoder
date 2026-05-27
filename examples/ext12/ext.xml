@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.2">
+  <template name="Ext" id="3">
+    <boolean name="flag"/>
+    <timestamp name="when" unit="second"/>
+    <enum name="kind">
+      <element name="A"/>
+      <element name="B"/>
+      <element name="C"/>
+    </enum>
+  </template>
+</templates>

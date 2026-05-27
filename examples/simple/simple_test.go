@@ -36,3 +36,36 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("message 2 (copy from dict): got (%d,%d,%d), want (1,2,3)", m2.Field1, m2.Field2, m2.Field3)
 	}
 }
+
+// BenchmarkDecode confirms the decode hot path is allocation-free once the
+// decoder's buffers are warm (the zero-alloc goal from PLAN.md).
+func BenchmarkDecode(b *testing.B) {
+	var dec TestDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0xF0, 0x81, 0x82, 0x83}
+	var m Test
+	dec.Decode(fastcore.NewReader(frame), &m) // warm the pmap buffer
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+// TestZeroAlloc enforces the zero-allocation hot path as a gate (PLAN.md step 8).
+func TestZeroAlloc(t *testing.T) {
+	var dec TestDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0xF0, 0x81, 0x82, 0x83}
+	var m Test
+	dec.Decode(fastcore.NewReader(frame), &m) // warm buffers
+	if n := testing.AllocsPerRun(100, func() {
+		r.Reset(frame)
+		_ = dec.Decode(r, &m)
+	}); n != 0 {
+		t.Errorf("decode allocates %.0f times/op, want 0", n)
+	}
+}
