@@ -1,0 +1,386 @@
+{
+  "source": "Transcribed from objectcomputing/mFAST tests/decoder_operator_test.cpp (BSD-3-Clause). See ../mfast/LICENSE.mfast and /THIRD_PARTY_NOTICES.md.",
+  "format": "see ./README.md for the field-level schema",
+  "vectors": [
+    {
+      "name": "none/uint64/optional/initial: null in stream is absent",
+      "operator": "none", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": false,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "none/uint64/mandatory/initial: value 0 in stream",
+      "operator": "none", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": false,
+      "expect": {"value": "0"}, "prevAfter": "change"
+    },
+
+    {
+      "name": "constant/uint64/optional: pmap bit set -> initial value",
+      "operator": "constant", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "constant/uint64/optional: pmap bit clear -> absent",
+      "operator": "constant", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "constant/uint64/mandatory: no pmap bit -> initial value",
+      "operator": "constant", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": false,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+
+    {
+      "name": "default/uint64/mandatory: bit set -> stream value 0",
+      "operator": "default", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"value": "0"}, "prevAfter": "change"
+    },
+    {
+      "name": "default/uint64/mandatory: bit clear -> initial value",
+      "operator": "default", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "default/uint64/optional: bit set, null in stream -> absent, prev preserved",
+      "operator": "default", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "preserve"
+    },
+    {
+      "name": "default/uint64/optional: bit clear -> initial value",
+      "operator": "default", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "default/uint64/optional/no-initial: bit clear -> absent",
+      "operator": "default", "type": "uint64", "presence": "optional",
+      "initial": null,
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+
+    {
+      "name": "copy/uint64/mandatory: bit set -> stream value 0",
+      "operator": "copy", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"value": "0"}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/mandatory: bit clear, prev undefined -> initial value",
+      "operator": "copy", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/mandatory: bit clear, prev assigned 5 -> previous value 5",
+      "operator": "copy", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevValue": "5",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "5"}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/mandatory: bit clear, prev empty -> dynamic error [ERR D6]",
+      "operator": "copy", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevState": "empty",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"error": true}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/optional: bit set, null -> absent",
+      "operator": "copy", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/optional: bit clear, prev undefined -> initial value",
+      "operator": "copy", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/optional: bit clear, prev assigned 5 -> previous value 5",
+      "operator": "copy", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615", "prevValue": "5",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "5"}, "prevAfter": "change"
+    },
+    {
+      "name": "copy/uint64/optional/no-initial: bit clear, prev undefined -> absent",
+      "operator": "copy", "type": "uint64", "presence": "optional",
+      "initial": null, "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+
+    {
+      "name": "increment/uint64/mandatory: bit set -> stream value 0",
+      "operator": "increment", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"value": "0"}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/mandatory: bit clear, prev undefined -> initial value",
+      "operator": "increment", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/mandatory: bit clear, prev assigned 5 -> 6",
+      "operator": "increment", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevValue": "5",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "6"}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/mandatory: bit clear, prev empty -> dynamic error [ERR D6]",
+      "operator": "increment", "type": "uint64", "presence": "mandatory",
+      "initial": "18446744073709551615", "prevState": "empty",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"error": true}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/optional: bit set, null -> absent",
+      "operator": "increment", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/optional: bit clear, prev undefined -> initial value",
+      "operator": "increment", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "18446744073709551615"}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/optional: bit clear, prev assigned 5 -> 6",
+      "operator": "increment", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615", "prevValue": "5",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "6"}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/optional: bit clear, prev empty -> absent",
+      "operator": "increment", "type": "uint64", "presence": "optional",
+      "initial": "18446744073709551615", "prevState": "empty",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "increment/uint64/optional/no-initial: bit clear, prev undefined -> absent",
+      "operator": "increment", "type": "uint64", "presence": "optional",
+      "initial": null, "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+
+    {
+      "name": "delta/uint64/mandatory/initial 5: delta +2 -> 7",
+      "operator": "delta", "type": "uint64", "presence": "mandatory",
+      "initial": "5",
+      "input": "C082", "hasPmapBit": false,
+      "expect": {"value": "7"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/uint64/mandatory/no-initial: base 0 + delta 2 -> 2",
+      "operator": "delta", "type": "uint64", "presence": "mandatory",
+      "initial": null,
+      "input": "C082", "hasPmapBit": false,
+      "expect": {"value": "2"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/uint64/optional/initial 5: nullable delta +1 -> 6",
+      "operator": "delta", "type": "uint64", "presence": "optional",
+      "initial": "5",
+      "input": "C082", "hasPmapBit": false,
+      "expect": {"value": "6"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/uint64/optional/initial 5: null delta -> absent",
+      "operator": "delta", "type": "uint64", "presence": "optional",
+      "initial": "5",
+      "input": "C080", "hasPmapBit": false,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+
+    {
+      "name": "delta/decimal/mandatory/initial (12,1): exp +2 mant +3 -> (15,3)",
+      "operator": "delta", "type": "decimal", "presence": "mandatory",
+      "initial": {"mantissa": "12", "exponent": 1},
+      "input": "C08283", "hasPmapBit": false,
+      "expect": {"value": {"mantissa": "15", "exponent": 3}}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/decimal/mandatory/no-initial: base (0,0) exp +2 mant +3 -> (3,2)",
+      "operator": "delta", "type": "decimal", "presence": "mandatory",
+      "initial": null,
+      "input": "C08283", "hasPmapBit": false,
+      "expect": {"value": {"mantissa": "3", "exponent": 2}}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/decimal/optional/no-initial: null exponent delta -> absent, prev preserved",
+      "operator": "delta", "type": "decimal", "presence": "optional",
+      "initial": null,
+      "input": "C08083", "hasPmapBit": false,
+      "expect": {"absent": true}, "prevAfter": "preserve"
+    },
+
+    {
+      "name": "delta/ascii/mandatory/initial: tail-subtract 6 + 'value' -> 'initial_value'",
+      "operator": "delta", "type": "ascii", "presence": "mandatory",
+      "initial": "initial_string",
+      "input": "C08676616C75E5", "hasPmapBit": false,
+      "expect": {"value": "initial_value"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/ascii/mandatory/no-initial: base '' subtract 0 + 'ABCD' -> 'ABCD'",
+      "operator": "delta", "type": "ascii", "presence": "mandatory",
+      "initial": null,
+      "input": "8080414243C4", "hasPmapBit": false,
+      "expect": {"value": "ABCD"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/ascii/mandatory/no-initial: subtraction longer than base -> error",
+      "operator": "delta", "type": "ascii", "presence": "mandatory",
+      "initial": null,
+      "input": "C08676616C75E5", "hasPmapBit": false,
+      "expect": {"error": true}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/ascii/optional/initial: null subtraction -> absent, prev preserved",
+      "operator": "delta", "type": "ascii", "presence": "optional",
+      "initial": "initial_string",
+      "input": "C080", "hasPmapBit": false,
+      "expect": {"absent": true}, "prevAfter": "preserve"
+    },
+    {
+      "name": "delta/ascii/optional/initial: positive subtract 2 + 'ABCD' -> 'initial_striABCD'",
+      "operator": "delta", "type": "ascii", "presence": "optional",
+      "initial": "initial_string",
+      "input": "C083414243C4", "hasPmapBit": false,
+      "expect": {"value": "initial_striABCD"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/ascii/optional/initial: negative subtraction (front) + 'ABCD' -> 'ABCD_string'",
+      "operator": "delta", "type": "ascii", "presence": "optional",
+      "initial": "initial_string",
+      "input": "80F8414243C4", "hasPmapBit": false,
+      "expect": {"value": "ABCD_string"}, "prevAfter": "change"
+    },
+
+    {
+      "name": "delta/unicode/mandatory/initial: tail-subtract 6 + len5 'value' -> 'initial_value'",
+      "operator": "delta", "type": "unicode", "presence": "mandatory",
+      "initial": "initial_string",
+      "input": "C0868576616C7565", "hasPmapBit": false,
+      "expect": {"value": "initial_value"}, "prevAfter": "change"
+    },
+    {
+      "name": "delta/unicode/optional/initial: positive subtract 2 + len4 'ABCD' -> 'initial_striABCD'",
+      "operator": "delta", "type": "unicode", "presence": "optional",
+      "initial": "initial_string",
+      "input": "C0838441424344", "hasPmapBit": false,
+      "expect": {"value": "initial_striABCD"}, "prevAfter": "change"
+    },
+
+    {
+      "name": "tail/ascii/mandatory/initial: tail 'value' over base -> 'initial_svalue'",
+      "operator": "tail", "type": "ascii", "presence": "mandatory",
+      "initial": "initial_string",
+      "input": "C076616C75E5", "hasPmapBit": true,
+      "expect": {"value": "initial_svalue"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/mandatory/initial: bit clear, prev undefined -> initial value",
+      "operator": "tail", "type": "ascii", "presence": "mandatory",
+      "initial": "initial_string", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "initial_string"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/mandatory/initial: bit clear, prev assigned 'ABCDE' -> 'ABCDE'",
+      "operator": "tail", "type": "ascii", "presence": "mandatory",
+      "initial": "initial_string", "prevValue": "ABCDE",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "ABCDE"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/mandatory/no-initial: bit clear, prev undefined -> dynamic error",
+      "operator": "tail", "type": "ascii", "presence": "mandatory",
+      "initial": null, "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"error": true}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/mandatory/no-initial: bit set, base '' + tail 'value' -> 'value'",
+      "operator": "tail", "type": "ascii", "presence": "mandatory",
+      "initial": null,
+      "input": "C076616C75E5", "hasPmapBit": true,
+      "expect": {"value": "value"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional/initial: tail 'value' over base -> 'initial_svalue'",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": "initial_string",
+      "input": "C076616C75E5", "hasPmapBit": true,
+      "expect": {"value": "initial_svalue"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional/initial: null tail -> absent",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": "initial_string",
+      "input": "C080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional/initial: bit clear, prev undefined -> initial value",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": "initial_string", "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "initial_string"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional: bit clear, prev assigned 'ABCDE' -> 'ABCDE'",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": "initial_string", "prevValue": "ABCDE",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"value": "ABCDE"}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional: bit clear, prev empty -> absent",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": "initial_string", "prevState": "empty",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    },
+    {
+      "name": "tail/ascii/optional/no-initial: bit clear, prev undefined -> absent",
+      "operator": "tail", "type": "ascii", "presence": "optional",
+      "initial": null, "prevState": "undefined",
+      "input": "8080", "hasPmapBit": true,
+      "expect": {"absent": true}, "prevAfter": "change"
+    }
+  ]
+}
