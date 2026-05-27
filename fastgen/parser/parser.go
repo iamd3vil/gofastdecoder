@@ -40,6 +40,39 @@ func ParseFile(path string) (*ast.Schema, error) {
 	return ParseBytes(data)
 }
 
+// ParseFiles parses several FAST template files and merges their templates into
+// one schema, then resolves static template references across the whole set
+// (§6.4). This is how a template definition in one file (e.g. via templateNs)
+// is referenced from another. Templates are matched by name; on a duplicate
+// name across files the first occurrence wins. Cross-file <define> references
+// are not resolved — defines are file-local.
+func ParseFiles(paths ...string) (*ast.Schema, error) {
+	merged := &ast.Schema{}
+	seen := make(map[string]bool)
+	for _, path := range paths {
+		s, err := ParseFile(path)
+		if err != nil {
+			return nil, err
+		}
+		if merged.Namespace == "" {
+			merged.Namespace, merged.TemplateNs, merged.Dictionary = s.Namespace, s.TemplateNs, s.Dictionary
+		}
+		for _, t := range s.Templates {
+			if seen[t.Name] {
+				continue
+			}
+			seen[t.Name] = true
+			merged.Templates = append(merged.Templates, t)
+		}
+	}
+	// Re-run inlining over the merged set: references left unresolved in their
+	// own file (the target lived elsewhere) now find their target.
+	if err := inlineStaticTemplateRefs(merged); err != nil {
+		return nil, err
+	}
+	return merged, nil
+}
+
 // ParseBytes parses a FAST template XML document and returns the fully
 // resolved ast.Schema. All <define>/<type> references are inlined; the
 // returned schema contains no unresolved references.

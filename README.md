@@ -60,14 +60,14 @@ The decode path is allocation-free once buffers are warm (enforced by
 - A generated `Router` that reads the message presence map, decodes the
   template id (global-dictionary copy on PMAP bit 0), and dispatches to the
   matching template, returning a `Message` the caller type-switches on.
-- Static `<templateRef name="T"/>`: the referenced template is inlined.
+- Static `<templateRef name="T"/>`: the referenced template is inlined,
+  including references whose target is defined in a different file (pass each
+  file with a repeated `-in`; `parser.ParseFiles` merges and resolves them).
 
 **Not yet implemented**
 
 - Dynamic `<templateRef/>` (template id carried in the stream — nested dynamic
   dispatch). Reported by the emitter rather than silently dropped.
-- Cross-file / cross-`templateNs` template references (need multi-file parsing);
-  left unresolved and reported.
 - Bit groups with an operator (e.g. `copy`) or optional sub-fields.
 - An encoder.
 

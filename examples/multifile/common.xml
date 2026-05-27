@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.1"
+           templateNs="urn:example:common">
+  <template name="Header" id="200">
+    <uInt32 name="seqNum" id="34"><increment/></uInt32>
+  </template>
+</templates>

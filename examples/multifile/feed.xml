@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.1"
+           templateNs="urn:example:feed">
+  <template name="Quote" id="10">
+    <templateRef name="Header"/>
+    <uInt32 name="price" id="270"><copy/></uInt32>
+  </template>
+</templates>

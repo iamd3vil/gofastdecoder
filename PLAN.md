@@ -85,7 +85,6 @@ oracle *before* a line of `fastcore` is written.
 
 ### Remaining work
 - Dynamic `<templateRef/>` (template id in the stream): nested dynamic dispatch.
-- Cross-file / cross-`templateNs` template references (multi-file parsing).
 - Bit groups with an operator (e.g. `copy`) or optional sub-fields.
 - mFAST feature/structural vector transcription for byte-level verification.
 - An encoder (if ever needed).
