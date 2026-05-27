@@ -100,6 +100,12 @@ type Field struct {
 	// BitFields are the packed sub-fields of a BitGroup, in wire order
 	// (left-to-right bit allocation).
 	BitFields []*Field
+
+	// BitWidth is the fixed bit width of a field packed inside a BitGroup. It is
+	// set for the FAST 1.2 int2..int7 / uInt1..uInt7 sub-types; for enum, set,
+	// and boolean sub-fields it is 0 and the width is derived from the type
+	// (enum: ceil(log2(n)); set: n; boolean: 1, or 2 if optional).
+	BitWidth int
 }
 
 // Sequence is a repeating group: a length field (uInt32, §6.2.5) followed by a

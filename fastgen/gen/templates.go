@@ -186,6 +186,43 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{end}}	}
 {{- end -}}
 
+{{/* bitgroup: reads one SBIT entity, then unpacks each fixed-width sub-field
+MSB-first across its data bits (FAST 1.2). */}}
+{{- define "bitgroup" -}}
+	{
+		bg, err := r.ReadBitGroup(d.{{.Buf}})
+		if err != nil {
+			return err
+		}
+		d.{{.Buf}} = bg.Buffer()
+{{range .Fields}}{{.}}
+{{end}}	}
+{{- end -}}
+
+{{- define "bitfieldUint" -}}
+		if v, err := bg.ReadBits({{.Width}}); err != nil {
+			return err
+		} else {
+			m.{{.Field}} = v
+		}
+{{- end -}}
+
+{{- define "bitfieldInt" -}}
+		if v, err := bg.ReadBitsSigned({{.Width}}); err != nil {
+			return err
+		} else {
+			m.{{.Field}} = v
+		}
+{{- end -}}
+
+{{- define "bitfieldBool" -}}
+		if v, err := bg.ReadBits(1); err != nil {
+			return err
+		} else {
+			m.{{.Field}} = fastcore.Bool(v)
+		}
+{{- end -}}
+
 {{- define "group" -}}
 {{if .Optional}}	if pm.Next() {
 		m.Has{{.Field}} = true

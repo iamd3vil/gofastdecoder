@@ -157,6 +157,17 @@ func (g *generator) renderStructs(w *strings.Builder, name string, instrs []ast.
 	for _, in := range instrs {
 		switch x := in.(type) {
 		case *ast.Field:
+			if x.Type == ast.BitGroup {
+				// Bit-group sub-fields are flattened into the parent struct.
+				for _, bf := range x.BitFields {
+					gt, err := goType(bf)
+					if err != nil {
+						return err
+					}
+					sv.Fields = append(sv.Fields, structFieldView{Name: exported(bf.Name), Type: gt})
+				}
+				continue
+			}
 			gt, err := goType(x)
 			if err != nil {
 				return err
@@ -325,8 +336,81 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 
 	case ast.ASCIIString, ast.UnicodeString, ast.ByteVector:
 		return g.bytesFieldStep(slotPrefix, f, optional)
+
+	case ast.BitGroup:
+		return g.bitGroupStep(slotPrefix, f)
 	}
 	return "", fmt.Errorf("field %q: type not yet supported by emitter", f.Name)
+}
+
+// bitGroupStep renders the decode for a bit group: read the SBIT entity, then
+// unpack each fixed-width sub-field. Only mandatory sub-fields and a bit group
+// without an operator are supported for now.
+func (g *generator) bitGroupStep(slotPrefix string, f *ast.Field) (string, error) {
+	if f.Op.Kind != ast.NoOp {
+		return "", fmt.Errorf("field %q: bitGroup with an operator not yet supported", f.Name)
+	}
+	buf := "bg_" + sanitize(slotPrefix+exported(f.Name))
+	g.pmaps = append(g.pmaps, buf)
+
+	lines := make([]string, 0, len(f.BitFields))
+	for _, bf := range f.BitFields {
+		if bf.Presence == ast.Optional {
+			return "", fmt.Errorf("field %q: optional bit-group sub-field %q not yet supported", f.Name, bf.Name)
+		}
+		w := bitFieldWidth(bf)
+		if w <= 0 {
+			return "", fmt.Errorf("field %q: cannot determine bit width of sub-field %q", f.Name, bf.Name)
+		}
+		var tmpl string
+		switch bf.Type {
+		case ast.Int32, ast.Int64:
+			tmpl = "bitfieldInt"
+		case ast.Boolean:
+			tmpl = "bitfieldBool"
+		default: // UInt32/UInt64/Enum/Set
+			tmpl = "bitfieldUint"
+		}
+		line, err := render(tmpl, struct {
+			Field string
+			Width int
+		}{Field: exported(bf.Name), Width: w})
+		if err != nil {
+			return "", err
+		}
+		lines = append(lines, line)
+	}
+	return render("bitgroup", struct {
+		Buf    string
+		Fields []string
+	}{Buf: buf, Fields: lines})
+}
+
+// bitFieldWidth returns the number of bits a bit-group sub-field occupies: the
+// explicit width for int2..int7 / uInt1..uInt7, or a derived width for enum
+// (ceil(log2(n))), set (n), and boolean (1) — all mandatory (§FAST 1.2 Bit Group).
+func bitFieldWidth(f *ast.Field) int {
+	if f.BitWidth > 0 {
+		return f.BitWidth
+	}
+	switch f.Type {
+	case ast.Boolean:
+		return 1
+	case ast.Enum:
+		return bitsForCount(len(f.Elements))
+	case ast.Set:
+		return len(f.Elements)
+	}
+	return 0
+}
+
+// bitsForCount returns ceil(log2(n)), with a minimum of 1.
+func bitsForCount(n int) int {
+	w := 1
+	for (1 << w) < n {
+		w++
+	}
+	return w
 }
 
 func (g *generator) bytesFieldStep(slotPrefix string, f *ast.Field, optional bool) (string, error) {

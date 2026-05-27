@@ -79,6 +79,10 @@ func (b *BitReader) ReadBitsSigned(n int) (int64, error) {
 // BitsConsumed reports how many bits have been read.
 func (b *BitReader) BitsConsumed() int { return b.cursor }
 
+// Buffer returns the backing byte slice, so a caller that passed a reusable
+// buffer to ReadBitGroup can store the (possibly grown) slice for reuse.
+func (b *BitReader) Buffer() []byte { return b.data }
+
 // TimeUnit is the granularity of a FAST 1.2 timestamp (§Timestamp Data Type).
 type TimeUnit uint8
 

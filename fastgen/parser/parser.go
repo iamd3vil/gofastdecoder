@@ -1038,6 +1038,7 @@ func (p *parser) resolveField(ri rawInstruction) (*ast.Field, error) {
 		return nil, nil
 	}
 	f.Type = bt
+	f.BitWidth = bitWidthOf(tag)
 
 	// Timestamp attrs
 	if bt == ast.Timestamp {
@@ -1407,9 +1408,25 @@ func baseTypeOf(tag string, attrs map[string]string) (ast.BaseType, error) {
 		return ast.Timestamp, nil
 	case "bitGroup":
 		return ast.BitGroup, nil
+	case "int2", "int3", "int4", "int5", "int6", "int7":
+		return ast.Int32, nil // bit-group signed sub-field; width from bitWidthOf
+	case "uInt1", "uInt2", "uInt3", "uInt4", "uInt5", "uInt6", "uInt7":
+		return ast.UInt32, nil // bit-group unsigned sub-field
 	default:
 		return 0, fmt.Errorf("unknown type %q", tag)
 	}
+}
+
+// bitWidthOf returns the fixed bit width of a FAST 1.2 intN/uIntN bit-group
+// sub-type tag, or 0 if tag is not such a type.
+func bitWidthOf(tag string) int {
+	switch {
+	case len(tag) == 4 && tag[:3] == "int": // int2..int7
+		return int(tag[3] - '0')
+	case len(tag) == 5 && tag[:4] == "uInt": // uInt1..uInt7
+		return int(tag[4] - '0')
+	}
+	return 0
 }
 
 // presenceOf parses a presence attribute value.

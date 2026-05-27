@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.2">
+  <template name="Level" id="5">
+    <bitGroup name="info">
+      <enum name="updateAction">
+        <element name="New"/>
+        <element name="Change"/>
+        <element name="Delete"/>
+      </enum>
+      <enum name="entryType">
+        <element name="Bid"/>
+        <element name="Ask"/>
+      </enum>
+      <boolean name="endOfBook"/>
+      <uInt3 name="priceLevel"/>
+    </bitGroup>
+  </template>
+</templates>
