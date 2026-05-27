@@ -53,20 +53,22 @@ The decode path is allocation-free once buffers are warm (enforced by
   D5/D6/D7 dynamic errors. Verified by a 53-case corpus transcribed from mFAST
   covering uint64, decimal, ascii, and unicode.
 - Code generation for scalar fields of every base type plus the 1.2 types
-  (boolean, timestamp, enum, set), and for sequences and groups. 24 of the 25
-  mFAST fixture templates generate valid Go.
+  (boolean, timestamp, enum, set), decimals with individual exponent/mantissa
+  operators, bit groups, sequences, and groups. 22 of the 25 mFAST fixtures
+  generate valid Go (the other 3 use the unsupported constructs below).
 - FAST 1.2 primitives: bit-group bit reader, timestamp→`time.Time`, boolean.
+- A generated `Router` that reads the message presence map, decodes the
+  template id (global-dictionary copy on PMAP bit 0), and dispatches to the
+  matching template, returning a `Message` the caller type-switches on.
+- Static `<templateRef name="T"/>`: the referenced template is inlined.
 
 **Not yet implemented**
 
-- Message-level template-identifier dispatch (presence-map bit 0 + the global
-  template-id copy). Generated `Decode` assumes the template is already
-  selected; a multi-template router is future work.
-- `bitGroup` field emission (the `fastcore.BitReader` primitive exists; the
-  parser and emitter do not yet wire packed sub-fields end-to-end).
-- Decimal fields with individual exponent/mantissa operators (the one mFAST
-  fixture, `test2.xml`, that does not generate).
-- `<templateRef>` instructions (the parser currently skips them).
+- Dynamic `<templateRef/>` (template id carried in the stream — nested dynamic
+  dispatch). Reported by the emitter rather than silently dropped.
+- Cross-file / cross-`templateNs` template references (need multi-file parsing);
+  left unresolved and reported.
+- Bit groups with an operator (e.g. `copy`) or optional sub-fields.
 - An encoder.
 
 See `PLAN.md` for the full build sequence and status.

@@ -73,23 +73,22 @@ oracle *before* a line of `fastcore` is written.
    in both `fastcore` and `fastgen`; verified end-to-end by `examples/ext12`.
    _Remaining:_ transcribe mFAST feature vectors (`enum_*`/`set_*`/`timestamp_*`)
    for byte-level message verification; typed Go enums (currently `uint64`).
-6. **[TODO] `bitGroup`** — `fastcore.BitReader` exists and is unit-tested
-   (spec layout example); parser+emitter wiring of packed sub-fields and the
-   `intN/uIntN` sub-types is not done.
-7. **[partial] Structural decode** — sequences and groups emit and decode;
-   _remaining:_ message-level template-identifier dispatch (PMAP bit 0 + global
-   tid copy) and a multi-template router; structural vectors from mFAST.
-8. **[DONE] Example + benchmarks** — `examples/simple` + `examples/ext12` with
-   `//go:generate`; `0 allocs/op` proven and gated by `TestZeroAlloc`.
-9. **[DONE] Docs** — `README.md` on the core/gen split, usage, and coverage.
+6. **[DONE] `bitGroup`** — parser maps `intN/uIntN` sub-types with widths;
+   emitter flattens sub-fields and unpacks them via `fastcore.BitReader`
+   (`examples/bitgroup`).
+7. **[DONE] Structural decode** — sequences and groups; message-level
+   template-id dispatch via a generated `Router` (`examples/simple`
+   `TestRouterDispatch`). Static `<templateRef>` inlined (`examples/templateref`);
+   decimal individual operators (`examples/decimalind`).
+8. **[DONE] Example + benchmarks** — `0 allocs/op` gated by `TestZeroAlloc`.
+9. **[DONE] Docs** — `README.md`.
 
-### Remaining work, prioritized
-- Message framing: template-id dispatch + a router over multiple templates
-  (step 7) — needed to decode real multi-template feed captures.
-- `bitGroup` end-to-end (step 6).
-- Decimal with individual exponent/mantissa operators (unblocks `test2.xml`).
-- `<templateRef>` support in parser + emitter.
+### Remaining work
+- Dynamic `<templateRef/>` (template id in the stream): nested dynamic dispatch.
+- Cross-file / cross-`templateNs` template references (multi-file parsing).
+- Bit groups with an operator (e.g. `copy`) or optional sub-fields.
 - mFAST feature/structural vector transcription for byte-level verification.
+- An encoder (if ever needed).
 
 ## Pending inputs (non-blocking)
 
