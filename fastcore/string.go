@@ -117,7 +117,7 @@ func (r *Reader) ReadNullableByteVector() (b []byte, null bool, err error) {
 }
 
 func (r *Reader) takeRaw(n int) ([]byte, error) {
-	if n < 0 || r.pos+n > len(r.buf) {
+	if n < 0 || n > len(r.buf)-r.pos {
 		return nil, ErrEndOfStream
 	}
 	b := r.buf[r.pos : r.pos+n]
