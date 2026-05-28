@@ -164,6 +164,15 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{end}}	}
 {{- end -}}
 
+{{- define "fieldConstant" -}}
+{{if .Optional}}	if pm.Next() {
+		m.{{.Field}} = {{.Assign}}
+		m.Has{{.Field}} = true
+	}
+{{else}}	m.{{.Field}} = {{.Assign}}
+{{end}}
+{{- end -}}
+
 {{- define "fieldUint" -}}
 	if v, present, err := {{.Call}}; err != nil {
 		return err
@@ -304,6 +313,28 @@ MSB-first across its data bits (FAST 1.2). */}}
 			return err
 		}
 		if present {
+			if cap(m.{{.Field}}) < int(n) {
+				m.{{.Field}} = make([]{{.Elem}}, n)
+			} else {
+				m.{{.Field}} = m.{{.Field}}[:n]
+			}
+			for i := range m.{{.Field}} {
+				if err := d.decode{{.Elem}}(r, &m.{{.Field}}[i]); err != nil {
+					return err
+				}
+			}
+		} else {
+			m.{{.Field}} = m.{{.Field}}[:0]
+		}
+	}
+{{- end -}}
+
+{{- define "sequenceConstant" -}}
+	{
+{{if .Optional}}		present := pm.Next()
+{{else}}		present := true
+{{end}}		if present {
+			const n = {{.Len}}
 			if cap(m.{{.Field}}) < int(n) {
 				m.{{.Field}} = make([]{{.Elem}}, n)
 			} else {

@@ -347,6 +347,20 @@ func (g *generator) sequenceStep(slotPrefix string, s *ast.Sequence) (string, fu
 	if lenField == nil {
 		lenField = &ast.Field{Name: s.Name + "Length", Type: ast.UInt32, Presence: s.Presence}
 	}
+	if lenField.Op.Kind == ast.Constant {
+		hasInit, initExpr, err := uintInitial(lenField)
+		if err != nil {
+			return "", nil, err
+		}
+		if !hasInit {
+			return "", nil, fmt.Errorf("sequence %q: constant length without a value", s.Name)
+		}
+		out, err := render("sequenceConstant", struct {
+			Field, Elem, Len string
+			Optional         bool
+		}{Field: sname, Elem: elem, Len: initExpr, Optional: s.Presence == ast.Optional})
+		return out, func() error { return g.nestedMethod(elem, s.Instructions) }, err
+	}
 	lenSlot := g.addSlot(slotPrefix+sname+"Len", lenField)
 	hasInit, initExpr, err := intInitial(lenField)
 	if err != nil {
@@ -365,6 +379,23 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 
 	switch f.Type {
 	case ast.Int32, ast.Int64, ast.Timestamp:
+		if f.Op.Kind == ast.Constant {
+			hasInit, initExpr, err := intInitial(f)
+			if err != nil {
+				return "", err
+			}
+			if !hasInit {
+				return "", fmt.Errorf("field %q: constant without a value", f.Name)
+			}
+			assign := initExpr
+			if f.Type == ast.Timestamp {
+				assign = fmt.Sprintf("fastcore.TimestampUTC(%s, %s)", initExpr, unitExpr(f.Unit))
+			}
+			return render("fieldConstant", struct {
+				Field, Assign string
+				Optional      bool
+			}{Field: fname, Assign: assign, Optional: optional})
+		}
 		slot := g.addSlot(slotPrefix+fname, f)
 		op, _ := operatorExpr(f.Op.Kind)
 		hasInit, initExpr, err := intInitial(f)
@@ -378,7 +409,6 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			Optional: optional, HasInit: hasInit, IsTimestamp: f.Type == ast.Timestamp})
 
 	case ast.UInt32, ast.UInt64, ast.Enum, ast.Set, ast.Boolean:
-		slot := g.addSlot(slotPrefix+fname, f)
 		hasInit, initExpr, err := uintInitial(f)
 		if err != nil {
 			return "", err
@@ -390,6 +420,23 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 		case ast.Enum, ast.Set:
 			assign = g.enumTypeName(f, slotPrefix) + "(v)"
 		}
+		if f.Op.Kind == ast.Constant {
+			if !hasInit {
+				return "", fmt.Errorf("field %q: constant without a value", f.Name)
+			}
+			assign = initExpr
+			switch f.Type {
+			case ast.Boolean:
+				assign = "fastcore.Bool(" + initExpr + ")"
+			case ast.Enum, ast.Set:
+				assign = g.enumTypeName(f, slotPrefix) + "(" + initExpr + ")"
+			}
+			return render("fieldConstant", struct {
+				Field, Assign string
+				Optional      bool
+			}{Field: fname, Assign: assign, Optional: optional})
+		}
+		slot := g.addSlot(slotPrefix+fname, f)
 		return render("fieldUint", struct {
 			Field, Call, Assign string
 			Optional            bool
@@ -397,6 +444,19 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			Optional: optional})
 
 	case ast.Decimal:
+		if f.Op.Kind == ast.Constant {
+			hasInit, m, e, err := decimalInitial(f)
+			if err != nil {
+				return "", err
+			}
+			if !hasInit {
+				return "", fmt.Errorf("field %q: constant without a value", f.Name)
+			}
+			return render("fieldConstant", struct {
+				Field, Assign string
+				Optional      bool
+			}{Field: fname, Assign: fmt.Sprintf("fastcore.Decimal{Mant: %s, Exp: %s}", m, e), Optional: optional})
+		}
 		if f.Exponent != nil || f.Mantissa != nil {
 			return g.decimalIndividualStep(slotPrefix, f, optional)
 		}
@@ -537,6 +597,15 @@ func bitsForCount(n int) int {
 
 func (g *generator) bytesFieldStep(slotPrefix string, f *ast.Field, optional bool) (string, error) {
 	fname := exported(f.Name)
+	if f.Op.Kind == ast.Constant && f.Type != ast.ByteVector {
+		if !f.Op.HasInitial {
+			return "", fmt.Errorf("field %q: constant without a value", f.Name)
+		}
+		return render("fieldConstant", struct {
+			Field, Assign string
+			Optional      bool
+		}{Field: fname, Assign: strconv.Quote(f.Op.Initial), Optional: optional})
+	}
 	slot := g.addSlot(slotPrefix+fname, f)
 	assign := "string(v)"
 	if f.Type == ast.ByteVector {

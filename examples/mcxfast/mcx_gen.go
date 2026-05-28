@@ -90,7 +90,6 @@ type ProductStateChange struct {
 // dictionary state persists as the field operators require.
 type ProductStateChangeDecoder struct {
 	pmap                                    []byte
-	s_ProductStateChangeMsgType             fastcore.BytesSlot
 	s_ProductStateChangeMsgSeqNum           fastcore.UintSlot
 	s_ProductStateChangeSenderCompID        fastcore.UintSlot
 	s_ProductStateChangeMarketSegmentID     fastcore.UintSlot
@@ -108,11 +107,8 @@ func (d *ProductStateChangeDecoder) decodeProductStateChange(r *fastcore.Reader,
 	_ = pm
 	m.HasMarketCondition = false
 	m.HasTESTradSesStatus = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("h"), &d.s_ProductStateChangeMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "h"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_ProductStateChangeMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -184,7 +180,6 @@ func (d *ProductStateChangeDecoder) Decode(r *fastcore.Reader, m *ProductStateCh
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *ProductStateChangeDecoder) Reset() {
-	d.s_ProductStateChangeMsgType.Reset()
 	d.s_ProductStateChangeMsgSeqNum.Reset()
 	d.s_ProductStateChangeSenderCompID.Reset()
 	d.s_ProductStateChangeMarketSegmentID.Reset()
@@ -244,7 +239,6 @@ type MassInstrumentStateChange struct {
 type MassInstrumentStateChangeDecoder struct {
 	pmap                                                               []byte
 	pmap_MassInstrumentStateChangeSecMassStatGrpElem                   []byte
-	s_MassInstrumentStateChangeMsgType                                 fastcore.BytesSlot
 	s_MassInstrumentStateChangeMsgSeqNum                               fastcore.UintSlot
 	s_MassInstrumentStateChangeSenderCompID                            fastcore.UintSlot
 	s_MassInstrumentStateChangeMarketSegmentID                         fastcore.UintSlot
@@ -260,7 +254,6 @@ type MassInstrumentStateChangeDecoder struct {
 	s_MassInstrumentStateChangeSecMassStatGrpLen                       fastcore.UintSlot
 	s_MassInstrumentStateChangeLastFragment                            fastcore.UintSlot
 	s_MassInstrumentStateChangeSecMassStatGrpElemSecurityID            fastcore.IntSlot
-	s_MassInstrumentStateChangeSecMassStatGrpElemSecurityIDSource      fastcore.BytesSlot
 	s_MassInstrumentStateChangeSecMassStatGrpElemSecurityStatus        fastcore.UintSlot
 	s_MassInstrumentStateChangeSecMassStatGrpElemSecurityTradingStatus fastcore.UintSlot
 	s_MassInstrumentStateChangeSecMassStatGrpElemMarketCondition       fastcore.UintSlot
@@ -276,11 +269,8 @@ func (d *MassInstrumentStateChangeDecoder) decodeMassInstrumentStateChange(r *fa
 	m.HasSecurityMassTradingEvent = false
 	m.HasMassSoldOutIndicator = false
 	m.HasTESSecurityMassStatus = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("CO"), &d.s_MassInstrumentStateChangeMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "CO"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_MassInstrumentStateChangeMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -387,11 +377,8 @@ func (d *MassInstrumentStateChangeDecoder) decodeMassInstrumentStateChangeSecMas
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeUintDefault(r, &pm, false, true, 0); err != nil {
 		return err
 	} else if present {
@@ -445,7 +432,6 @@ func (d *MassInstrumentStateChangeDecoder) Decode(r *fastcore.Reader, m *MassIns
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *MassInstrumentStateChangeDecoder) Reset() {
-	d.s_MassInstrumentStateChangeMsgType.Reset()
 	d.s_MassInstrumentStateChangeMsgSeqNum.Reset()
 	d.s_MassInstrumentStateChangeSenderCompID.Reset()
 	d.s_MassInstrumentStateChangeMarketSegmentID.Reset()
@@ -461,7 +447,6 @@ func (d *MassInstrumentStateChangeDecoder) Reset() {
 	d.s_MassInstrumentStateChangeSecMassStatGrpLen.Reset()
 	d.s_MassInstrumentStateChangeLastFragment.Reset()
 	d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityID.Reset()
-	d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityIDSource.Reset()
 	d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityStatus.Reset()
 	d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityTradingStatus.Reset()
 	d.s_MassInstrumentStateChangeSecMassStatGrpElemMarketCondition.Reset()
@@ -499,12 +484,10 @@ type InstrumentStateChange struct {
 // dictionary state persists as the field operators require.
 type InstrumentStateChangeDecoder struct {
 	pmap                                         []byte
-	s_InstrumentStateChangeMsgType               fastcore.BytesSlot
 	s_InstrumentStateChangeMsgSeqNum             fastcore.UintSlot
 	s_InstrumentStateChangeSenderCompID          fastcore.UintSlot
 	s_InstrumentStateChangeMarketSegmentID       fastcore.UintSlot
 	s_InstrumentStateChangeSecurityID            fastcore.IntSlot
-	s_InstrumentStateChangeSecurityIDSource      fastcore.BytesSlot
 	s_InstrumentStateChangeSecurityStatus        fastcore.UintSlot
 	s_InstrumentStateChangeSecurityTradingStatus fastcore.UintSlot
 	s_InstrumentStateChangeMarketCondition       fastcore.UintSlot
@@ -522,11 +505,8 @@ func (d *InstrumentStateChangeDecoder) decodeInstrumentStateChange(r *fastcore.R
 	m.HasSecurityTradingEvent = false
 	m.HasSoldOutIndicator = false
 	m.HasTESSecurityStatus = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("f"), &d.s_InstrumentStateChangeMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "f"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_InstrumentStateChangeMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -547,11 +527,8 @@ func (d *InstrumentStateChangeDecoder) decodeInstrumentStateChange(r *fastcore.R
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_InstrumentStateChangeSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeUintDefault(r, &pm, false, true, 0); err != nil {
 		return err
 	} else if present {
@@ -615,12 +592,10 @@ func (d *InstrumentStateChangeDecoder) Decode(r *fastcore.Reader, m *InstrumentS
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *InstrumentStateChangeDecoder) Reset() {
-	d.s_InstrumentStateChangeMsgType.Reset()
 	d.s_InstrumentStateChangeMsgSeqNum.Reset()
 	d.s_InstrumentStateChangeSenderCompID.Reset()
 	d.s_InstrumentStateChangeMarketSegmentID.Reset()
 	d.s_InstrumentStateChangeSecurityID.Reset()
-	d.s_InstrumentStateChangeSecurityIDSource.Reset()
 	d.s_InstrumentStateChangeSecurityStatus.Reset()
 	d.s_InstrumentStateChangeSecurityTradingStatus.Reset()
 	d.s_InstrumentStateChangeMarketCondition.Reset()
@@ -714,7 +689,6 @@ type DepthIncrementalDecoder struct {
 	pmap                                                                 []byte
 	pmap_DepthIncrementalMDIncGrpElem                                    []byte
 	pmap_DepthIncrementalMDIncGrpElemTradeEntryGrp                       []byte
-	s_DepthIncrementalMsgType                                            fastcore.BytesSlot
 	s_DepthIncrementalMsgSeqNum                                          fastcore.UintSlot
 	s_DepthIncrementalSenderCompID                                       fastcore.UintSlot
 	s_DepthIncrementalMarketSegmentID                                    fastcore.UintSlot
@@ -723,7 +697,6 @@ type DepthIncrementalDecoder struct {
 	s_DepthIncrementalMDIncGrpElemMDUpdateAction                         fastcore.UintSlot
 	s_DepthIncrementalMDIncGrpElemMDEntryType                            fastcore.UintSlot
 	s_DepthIncrementalMDIncGrpElemSecurityID                             fastcore.IntSlot
-	s_DepthIncrementalMDIncGrpElemSecurityIDSource                       fastcore.BytesSlot
 	s_DepthIncrementalMDIncGrpElemMDEntryPx                              fastcore.DecimalSlot
 	s_DepthIncrementalMDIncGrpElemMDEntrySize                            fastcore.DecimalSlot
 	s_DepthIncrementalMDIncGrpElemNumberOfOrders                         fastcore.UintSlot
@@ -754,11 +727,8 @@ type DepthIncrementalDecoder struct {
 func (d *DepthIncrementalDecoder) decodeDepthIncremental(r *fastcore.Reader, pmArg *fastcore.PMAP, m *DepthIncremental) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("X"), &d.s_DepthIncrementalMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "X"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_DepthIncrementalMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -832,11 +802,8 @@ func (d *DepthIncrementalDecoder) decodeDepthIncrementalMDIncGrpElem(r *fastcore
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_DepthIncrementalMDIncGrpElemSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if mant, exp, present, err := fastcore.DecodeDecimalDelta(r, true, false, 0, 0, &d.s_DepthIncrementalMDIncGrpElemMDEntryPx); err != nil {
 		return err
 	} else if present {
@@ -1037,7 +1004,6 @@ func (d *DepthIncrementalDecoder) Decode(r *fastcore.Reader, m *DepthIncremental
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *DepthIncrementalDecoder) Reset() {
-	d.s_DepthIncrementalMsgType.Reset()
 	d.s_DepthIncrementalMsgSeqNum.Reset()
 	d.s_DepthIncrementalSenderCompID.Reset()
 	d.s_DepthIncrementalMarketSegmentID.Reset()
@@ -1046,7 +1012,6 @@ func (d *DepthIncrementalDecoder) Reset() {
 	d.s_DepthIncrementalMDIncGrpElemMDUpdateAction.Reset()
 	d.s_DepthIncrementalMDIncGrpElemMDEntryType.Reset()
 	d.s_DepthIncrementalMDIncGrpElemSecurityID.Reset()
-	d.s_DepthIncrementalMDIncGrpElemSecurityIDSource.Reset()
 	d.s_DepthIncrementalMDIncGrpElemMDEntryPx.Reset()
 	d.s_DepthIncrementalMDIncGrpElemMDEntrySize.Reset()
 	d.s_DepthIncrementalMDIncGrpElemNumberOfOrders.Reset()
@@ -1121,23 +1086,17 @@ type ComplexInstrumentUpdateDecoder struct {
 	pmap                                                                []byte
 	pmap_ComplexInstrumentUpdateInstrmtLegGrpElem                       []byte
 	pmap_ComplexInstrumentUpdateMarketSegmentGrpElem                    []byte
-	s_ComplexInstrumentUpdateMsgType                                    fastcore.BytesSlot
 	s_ComplexInstrumentUpdateMsgSeqNum                                  fastcore.UintSlot
 	s_ComplexInstrumentUpdateSenderCompID                               fastcore.UintSlot
-	s_ComplexInstrumentUpdateSecurityUpdateAction                       fastcore.BytesSlot
 	s_ComplexInstrumentUpdateSecurityID                                 fastcore.IntSlot
-	s_ComplexInstrumentUpdateSecurityIDSource                           fastcore.BytesSlot
 	s_ComplexInstrumentUpdateSecurityDesc                               fastcore.BytesSlot
-	s_ComplexInstrumentUpdateSecurityType                               fastcore.UintSlot
 	s_ComplexInstrumentUpdateSecuritySubType                            fastcore.UintSlot
 	s_ComplexInstrumentUpdateProductComplex                             fastcore.UintSlot
 	s_ComplexInstrumentUpdateLegRatioMultiplier                         fastcore.UintSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpLen                           fastcore.UintSlot
-	s_ComplexInstrumentUpdateMarketSegmentGrpLen                        fastcore.UintSlot
 	s_ComplexInstrumentUpdateTransactTime                               fastcore.IntSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSymbol                 fastcore.UintSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityID             fastcore.IntSlot
-	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityIDSource       fastcore.BytesSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityType           fastcore.UintSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegRatioQty               fastcore.UintSlot
 	s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSide                   fastcore.UintSlot
@@ -1151,11 +1110,8 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 	_ = pm
 	m.HasSecuritySubType = false
 	m.HasLegRatioMultiplier = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("BP"), &d.s_ComplexInstrumentUpdateMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "BP"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_ComplexInstrumentUpdateMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -1166,31 +1122,22 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 	} else if present {
 		m.SenderCompID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("A"), &d.s_ComplexInstrumentUpdateSecurityUpdateAction); err != nil {
-		return err
-	} else if present {
-		m.SecurityUpdateAction = string(v)
-	}
+	m.SecurityUpdateAction = "A"
+
 	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ComplexInstrumentUpdateSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_ComplexInstrumentUpdateSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpNone, fastcore.ASCIIKind, false, false, nil, &d.s_ComplexInstrumentUpdateSecurityDesc); err != nil {
 		return err
 	} else if present {
 		m.SecurityDesc = string(v)
 	}
-	if v, present, err := fastcore.DecodeUintConstant(&pm, false, 2); err != nil {
-		return err
-	} else if present {
-		m.SecurityType = SecurityType(v)
-	}
+	m.SecurityType = SecurityType(2)
+
 	if v, present, err := fastcore.DecodeUintNone(r, true); err != nil {
 		return err
 	} else if present {
@@ -1229,11 +1176,9 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 		}
 	}
 	{
-		n, present, err := fastcore.DecodeUintConstant(&pm, false, 1)
-		if err != nil {
-			return err
-		}
+		present := true
 		if present {
+			const n = 1
 			if cap(m.MarketSegmentGrp) < int(n) {
 				m.MarketSegmentGrp = make([]ComplexInstrumentUpdateMarketSegmentGrpElem, n)
 			} else {
@@ -1272,11 +1217,8 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdateInstrmtLeg
 	} else if present {
 		m.LegSecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.LegSecurityIDSource = string(v)
-	}
+	m.LegSecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeUintDefault(r, &pm, false, true, 0); err != nil {
 		return err
 	} else if present {
@@ -1335,23 +1277,17 @@ func (d *ComplexInstrumentUpdateDecoder) Decode(r *fastcore.Reader, m *ComplexIn
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *ComplexInstrumentUpdateDecoder) Reset() {
-	d.s_ComplexInstrumentUpdateMsgType.Reset()
 	d.s_ComplexInstrumentUpdateMsgSeqNum.Reset()
 	d.s_ComplexInstrumentUpdateSenderCompID.Reset()
-	d.s_ComplexInstrumentUpdateSecurityUpdateAction.Reset()
 	d.s_ComplexInstrumentUpdateSecurityID.Reset()
-	d.s_ComplexInstrumentUpdateSecurityIDSource.Reset()
 	d.s_ComplexInstrumentUpdateSecurityDesc.Reset()
-	d.s_ComplexInstrumentUpdateSecurityType.Reset()
 	d.s_ComplexInstrumentUpdateSecuritySubType.Reset()
 	d.s_ComplexInstrumentUpdateProductComplex.Reset()
 	d.s_ComplexInstrumentUpdateLegRatioMultiplier.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpLen.Reset()
-	d.s_ComplexInstrumentUpdateMarketSegmentGrpLen.Reset()
 	d.s_ComplexInstrumentUpdateTransactTime.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSymbol.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityID.Reset()
-	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityIDSource.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityType.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegRatioQty.Reset()
 	d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSide.Reset()
@@ -1386,28 +1322,22 @@ type QuoteRequest struct {
 // QuoteRequestDecoder decodes QuoteRequest messages. Reuse it across messages; its
 // dictionary state persists as the field operators require.
 type QuoteRequestDecoder struct {
-	pmap                                         []byte
-	pmap_QuoteRequestQuotReqGrpElem              []byte
-	s_QuoteRequestMsgType                        fastcore.BytesSlot
-	s_QuoteRequestMsgSeqNum                      fastcore.UintSlot
-	s_QuoteRequestSenderCompID                   fastcore.UintSlot
-	s_QuoteRequestMarketSegmentID                fastcore.UintSlot
-	s_QuoteRequestQuotReqGrpLen                  fastcore.UintSlot
-	s_QuoteRequestQuotReqGrpElemSecurityID       fastcore.IntSlot
-	s_QuoteRequestQuotReqGrpElemSecurityIDSource fastcore.BytesSlot
-	s_QuoteRequestQuotReqGrpElemSide             fastcore.UintSlot
-	s_QuoteRequestQuotReqGrpElemOrderQty         fastcore.DecimalSlot
-	s_QuoteRequestQuotReqGrpElemTransactTime     fastcore.IntSlot
+	pmap                                     []byte
+	pmap_QuoteRequestQuotReqGrpElem          []byte
+	s_QuoteRequestMsgSeqNum                  fastcore.UintSlot
+	s_QuoteRequestSenderCompID               fastcore.UintSlot
+	s_QuoteRequestMarketSegmentID            fastcore.UintSlot
+	s_QuoteRequestQuotReqGrpElemSecurityID   fastcore.IntSlot
+	s_QuoteRequestQuotReqGrpElemSide         fastcore.UintSlot
+	s_QuoteRequestQuotReqGrpElemOrderQty     fastcore.DecimalSlot
+	s_QuoteRequestQuotReqGrpElemTransactTime fastcore.IntSlot
 }
 
 func (d *QuoteRequestDecoder) decodeQuoteRequest(r *fastcore.Reader, pmArg *fastcore.PMAP, m *QuoteRequest) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("R"), &d.s_QuoteRequestMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "R"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_QuoteRequestMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -1424,11 +1354,9 @@ func (d *QuoteRequestDecoder) decodeQuoteRequest(r *fastcore.Reader, pmArg *fast
 		m.MarketSegmentID = v
 	}
 	{
-		n, present, err := fastcore.DecodeUintConstant(&pm, false, 1)
-		if err != nil {
-			return err
-		}
+		present := true
 		if present {
+			const n = 1
 			if cap(m.QuotReqGrp) < int(n) {
 				m.QuotReqGrp = make([]QuoteRequestQuotReqGrpElem, n)
 			} else {
@@ -1458,11 +1386,8 @@ func (d *QuoteRequestDecoder) decodeQuoteRequestQuotReqGrpElem(r *fastcore.Reade
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_QuoteRequestQuotReqGrpElemSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeUintCopy(r, &pm, true, false, 0, &d.s_QuoteRequestQuotReqGrpElemSide); err != nil {
 		return err
 	} else if present {
@@ -1499,13 +1424,10 @@ func (d *QuoteRequestDecoder) Decode(r *fastcore.Reader, m *QuoteRequest) error 
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *QuoteRequestDecoder) Reset() {
-	d.s_QuoteRequestMsgType.Reset()
 	d.s_QuoteRequestMsgSeqNum.Reset()
 	d.s_QuoteRequestSenderCompID.Reset()
 	d.s_QuoteRequestMarketSegmentID.Reset()
-	d.s_QuoteRequestQuotReqGrpLen.Reset()
 	d.s_QuoteRequestQuotReqGrpElemSecurityID.Reset()
-	d.s_QuoteRequestQuotReqGrpElemSecurityIDSource.Reset()
 	d.s_QuoteRequestQuotReqGrpElemSide.Reset()
 	d.s_QuoteRequestQuotReqGrpElemOrderQty.Reset()
 	d.s_QuoteRequestQuotReqGrpElemTransactTime.Reset()
@@ -1541,21 +1463,17 @@ type CrossRequest struct {
 // CrossRequestDecoder decodes CrossRequest messages. Reuse it across messages; its
 // dictionary state persists as the field operators require.
 type CrossRequestDecoder struct {
-	pmap                                             []byte
-	pmap_CrossRequestCrossRequestSideGrpElem         []byte
-	s_CrossRequestMsgType                            fastcore.BytesSlot
-	s_CrossRequestMsgSeqNum                          fastcore.UintSlot
-	s_CrossRequestSenderCompID                       fastcore.UintSlot
-	s_CrossRequestMarketSegmentID                    fastcore.UintSlot
-	s_CrossRequestSecurityID                         fastcore.IntSlot
-	s_CrossRequestSecurityIDSource                   fastcore.BytesSlot
-	s_CrossRequestOrderQty                           fastcore.DecimalSlot
-	s_CrossRequestCrossRequestType                   fastcore.UintSlot
-	s_CrossRequestCrossRequestSideGrpLen             fastcore.UintSlot
-	s_CrossRequestMDEntryPx                          fastcore.DecimalSlot
-	s_CrossRequestTransactTime                       fastcore.IntSlot
-	s_CrossRequestCrossRequestSideGrpElemSide        fastcore.UintSlot
-	s_CrossRequestCrossRequestSideGrpElemInputSource fastcore.UintSlot
+	pmap                                      []byte
+	pmap_CrossRequestCrossRequestSideGrpElem  []byte
+	s_CrossRequestMsgSeqNum                   fastcore.UintSlot
+	s_CrossRequestSenderCompID                fastcore.UintSlot
+	s_CrossRequestMarketSegmentID             fastcore.UintSlot
+	s_CrossRequestSecurityID                  fastcore.IntSlot
+	s_CrossRequestOrderQty                    fastcore.DecimalSlot
+	s_CrossRequestCrossRequestType            fastcore.UintSlot
+	s_CrossRequestMDEntryPx                   fastcore.DecimalSlot
+	s_CrossRequestTransactTime                fastcore.IntSlot
+	s_CrossRequestCrossRequestSideGrpElemSide fastcore.UintSlot
 }
 
 func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fastcore.PMAP, m *CrossRequest) error {
@@ -1563,11 +1481,8 @@ func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fast
 	_ = pm
 	m.HasOrderQty = false
 	m.HasMDEntryPx = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("U16"), &d.s_CrossRequestMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "U16"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_CrossRequestMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -1588,11 +1503,8 @@ func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fast
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_CrossRequestSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeDecimal(r, &pm, fastcore.OpNone, true, false, fastcore.Decimal{Mant: 0, Exp: 0}, &d.s_CrossRequestOrderQty); err != nil {
 		return err
 	} else if present {
@@ -1605,11 +1517,9 @@ func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fast
 		m.CrossRequestType = CrossRequestType(v)
 	}
 	{
-		n, present, err := fastcore.DecodeUintConstant(&pm, true, 1)
-		if err != nil {
-			return err
-		}
+		present := pm.Next()
 		if present {
+			const n = 1
 			if cap(m.CrossRequestSideGrp) < int(n) {
 				m.CrossRequestSideGrp = make([]CrossRequestCrossRequestSideGrpElem, n)
 			} else {
@@ -1650,11 +1560,8 @@ func (d *CrossRequestDecoder) decodeCrossRequestCrossRequestSideGrpElem(r *fastc
 		m.Side = Side(v)
 		m.HasSide = true
 	}
-	if v, present, err := fastcore.DecodeUintConstant(&pm, false, 0); err != nil {
-		return err
-	} else if present {
-		m.InputSource = InputSource(v)
-	}
+	m.InputSource = InputSource(0)
+
 	return nil
 }
 
@@ -1674,19 +1581,15 @@ func (d *CrossRequestDecoder) Decode(r *fastcore.Reader, m *CrossRequest) error 
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *CrossRequestDecoder) Reset() {
-	d.s_CrossRequestMsgType.Reset()
 	d.s_CrossRequestMsgSeqNum.Reset()
 	d.s_CrossRequestSenderCompID.Reset()
 	d.s_CrossRequestMarketSegmentID.Reset()
 	d.s_CrossRequestSecurityID.Reset()
-	d.s_CrossRequestSecurityIDSource.Reset()
 	d.s_CrossRequestOrderQty.Reset()
 	d.s_CrossRequestCrossRequestType.Reset()
-	d.s_CrossRequestCrossRequestSideGrpLen.Reset()
 	d.s_CrossRequestMDEntryPx.Reset()
 	d.s_CrossRequestTransactTime.Reset()
 	d.s_CrossRequestCrossRequestSideGrpElemSide.Reset()
-	d.s_CrossRequestCrossRequestSideGrpElemInputSource.Reset()
 }
 
 // isFASTMessage marks CrossRequest as a Message.
@@ -1778,14 +1681,12 @@ type DepthSnapshot struct {
 type DepthSnapshotDecoder struct {
 	pmap                                                     []byte
 	pmap_DepthSnapshotMDSshGrpElem                           []byte
-	s_DepthSnapshotMsgType                                   fastcore.BytesSlot
 	s_DepthSnapshotMsgSeqNum                                 fastcore.UintSlot
 	s_DepthSnapshotSenderCompID                              fastcore.UintSlot
 	s_DepthSnapshotLastMsgSeqNumProcessed                    fastcore.UintSlot
 	s_DepthSnapshotRefreshIndicator                          fastcore.UintSlot
 	s_DepthSnapshotMarketSegmentID                           fastcore.UintSlot
 	s_DepthSnapshotSecurityID                                fastcore.IntSlot
-	s_DepthSnapshotSecurityIDSource                          fastcore.BytesSlot
 	s_DepthSnapshotProductComplex                            fastcore.UintSlot
 	s_DepthSnapshotSecurityStatus                            fastcore.UintSlot
 	s_DepthSnapshotTESSecurityStatus                         fastcore.UintSlot
@@ -1831,11 +1732,8 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshot(r *fastcore.Reader, pmArg *fa
 	m.HasTESSecurityStatus = false
 	m.HasTotalBuyQuantity = false
 	m.HasTotalSellQuantity = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("W"), &d.s_DepthSnapshotMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "W"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, true, false, 0, &d.s_DepthSnapshotMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -1869,11 +1767,8 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshot(r *fastcore.Reader, pmArg *fa
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_DepthSnapshotSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_DepthSnapshotProductComplex); err != nil {
 		return err
 	} else if present {
@@ -2139,14 +2034,12 @@ func (d *DepthSnapshotDecoder) Decode(r *fastcore.Reader, m *DepthSnapshot) erro
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *DepthSnapshotDecoder) Reset() {
-	d.s_DepthSnapshotMsgType.Reset()
 	d.s_DepthSnapshotMsgSeqNum.Reset()
 	d.s_DepthSnapshotSenderCompID.Reset()
 	d.s_DepthSnapshotLastMsgSeqNumProcessed.Reset()
 	d.s_DepthSnapshotRefreshIndicator.Reset()
 	d.s_DepthSnapshotMarketSegmentID.Reset()
 	d.s_DepthSnapshotSecurityID.Reset()
-	d.s_DepthSnapshotSecurityIDSource.Reset()
 	d.s_DepthSnapshotProductComplex.Reset()
 	d.s_DepthSnapshotSecurityStatus.Reset()
 	d.s_DepthSnapshotTESSecurityStatus.Reset()
@@ -2221,7 +2114,6 @@ type IndexStats struct {
 // dictionary state persists as the field operators require.
 type IndexStatsDecoder struct {
 	pmap                        []byte
-	s_IndexStatsMsgType         fastcore.BytesSlot
 	s_IndexStatsMsgSeqNum       fastcore.UintSlot
 	s_IndexStatsSenderCompID    fastcore.UintSlot
 	s_IndexStatsMarketSegmentID fastcore.UintSlot
@@ -2253,11 +2145,8 @@ func (d *IndexStatsDecoder) decodeIndexStats(r *fastcore.Reader, pmArg *fastcore
 	m.HasIndex52WeekHigh = false
 	m.HasIndex52WeekLow = false
 	m.HasCloseIndexFlag = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("I"), &d.s_IndexStatsMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "I"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, true, false, 0, &d.s_IndexStatsMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -2359,7 +2248,6 @@ func (d *IndexStatsDecoder) Decode(r *fastcore.Reader, m *IndexStats) error {
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *IndexStatsDecoder) Reset() {
-	d.s_IndexStatsMsgType.Reset()
 	d.s_IndexStatsMsgSeqNum.Reset()
 	d.s_IndexStatsSenderCompID.Reset()
 	d.s_IndexStatsMarketSegmentID.Reset()
@@ -2409,33 +2297,27 @@ type TopOfBookImplied struct {
 // TopOfBookImpliedDecoder decodes TopOfBookImplied messages. Reuse it across messages; its
 // dictionary state persists as the field operators require.
 type TopOfBookImpliedDecoder struct {
-	pmap                                           []byte
-	pmap_TopOfBookImpliedMDIncGrpElem              []byte
-	s_TopOfBookImpliedMsgType                      fastcore.BytesSlot
-	s_TopOfBookImpliedMsgSeqNum                    fastcore.UintSlot
-	s_TopOfBookImpliedSenderCompID                 fastcore.UintSlot
-	s_TopOfBookImpliedMarketSegmentID              fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpLen                  fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpElemMDUpdateAction   fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpElemMDEntryType      fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpElemMDBookType       fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpElemMDSubBookType    fastcore.UintSlot
-	s_TopOfBookImpliedMDIncGrpElemSecurityID       fastcore.IntSlot
-	s_TopOfBookImpliedMDIncGrpElemSecurityIDSource fastcore.BytesSlot
-	s_TopOfBookImpliedMDIncGrpElemMDEntryPx        fastcore.DecimalSlot
-	s_TopOfBookImpliedMDIncGrpElemMDEntrySize      fastcore.DecimalSlot
-	s_TopOfBookImpliedMDIncGrpElemMDEntryTime      fastcore.IntSlot
-	s_TopOfBookImpliedMDIncGrpElemQuoteCondition   fastcore.UintSlot
+	pmap                                         []byte
+	pmap_TopOfBookImpliedMDIncGrpElem            []byte
+	s_TopOfBookImpliedMsgSeqNum                  fastcore.UintSlot
+	s_TopOfBookImpliedSenderCompID               fastcore.UintSlot
+	s_TopOfBookImpliedMarketSegmentID            fastcore.UintSlot
+	s_TopOfBookImpliedMDIncGrpLen                fastcore.UintSlot
+	s_TopOfBookImpliedMDIncGrpElemMDUpdateAction fastcore.UintSlot
+	s_TopOfBookImpliedMDIncGrpElemMDEntryType    fastcore.UintSlot
+	s_TopOfBookImpliedMDIncGrpElemMDSubBookType  fastcore.UintSlot
+	s_TopOfBookImpliedMDIncGrpElemSecurityID     fastcore.IntSlot
+	s_TopOfBookImpliedMDIncGrpElemMDEntryPx      fastcore.DecimalSlot
+	s_TopOfBookImpliedMDIncGrpElemMDEntrySize    fastcore.DecimalSlot
+	s_TopOfBookImpliedMDIncGrpElemMDEntryTime    fastcore.IntSlot
+	s_TopOfBookImpliedMDIncGrpElemQuoteCondition fastcore.UintSlot
 }
 
 func (d *TopOfBookImpliedDecoder) decodeTopOfBookImplied(r *fastcore.Reader, pmArg *fastcore.PMAP, m *TopOfBookImplied) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("X"), &d.s_TopOfBookImpliedMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "X"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_TopOfBookImpliedMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -2493,11 +2375,8 @@ func (d *TopOfBookImpliedDecoder) decodeTopOfBookImpliedMDIncGrpElem(r *fastcore
 	} else if present {
 		m.MDEntryType = MDEntryType(v)
 	}
-	if v, present, err := fastcore.DecodeUintConstant(&pm, false, 0); err != nil {
-		return err
-	} else if present {
-		m.MDBookType = MDBookType(v)
-	}
+	m.MDBookType = MDBookType(0)
+
 	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_TopOfBookImpliedMDIncGrpElemMDSubBookType); err != nil {
 		return err
 	} else if present {
@@ -2508,11 +2387,8 @@ func (d *TopOfBookImpliedDecoder) decodeTopOfBookImpliedMDIncGrpElem(r *fastcore
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_TopOfBookImpliedMDIncGrpElemSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if mant, exp, present, err := fastcore.DecodeDecimalDelta(r, true, false, 0, 0, &d.s_TopOfBookImpliedMDIncGrpElemMDEntryPx); err != nil {
 		return err
 	} else if present {
@@ -2556,17 +2432,14 @@ func (d *TopOfBookImpliedDecoder) Decode(r *fastcore.Reader, m *TopOfBookImplied
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *TopOfBookImpliedDecoder) Reset() {
-	d.s_TopOfBookImpliedMsgType.Reset()
 	d.s_TopOfBookImpliedMsgSeqNum.Reset()
 	d.s_TopOfBookImpliedSenderCompID.Reset()
 	d.s_TopOfBookImpliedMarketSegmentID.Reset()
 	d.s_TopOfBookImpliedMDIncGrpLen.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDUpdateAction.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDEntryType.Reset()
-	d.s_TopOfBookImpliedMDIncGrpElemMDBookType.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDSubBookType.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemSecurityID.Reset()
-	d.s_TopOfBookImpliedMDIncGrpElemSecurityIDSource.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDEntryPx.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDEntrySize.Reset()
 	d.s_TopOfBookImpliedMDIncGrpElemMDEntryTime.Reset()
@@ -2611,12 +2484,9 @@ type FlexibleInstrumentUpdate struct {
 type FlexibleInstrumentUpdateDecoder struct {
 	pmap                                                          []byte
 	pmap_FlexibleInstrumentUpdateMarketSegmentGrpElem             []byte
-	s_FlexibleInstrumentUpdateMsgType                             fastcore.BytesSlot
 	s_FlexibleInstrumentUpdateMsgSeqNum                           fastcore.UintSlot
 	s_FlexibleInstrumentUpdateSenderCompID                        fastcore.UintSlot
-	s_FlexibleInstrumentUpdateSecurityUpdateAction                fastcore.BytesSlot
 	s_FlexibleInstrumentUpdateSecurityID                          fastcore.IntSlot
-	s_FlexibleInstrumentUpdateSecurityIDSource                    fastcore.BytesSlot
 	s_FlexibleInstrumentUpdateSecurityDesc                        fastcore.BytesSlot
 	s_FlexibleInstrumentUpdateSecurityType                        fastcore.UintSlot
 	s_FlexibleInstrumentUpdateProductComplex                      fastcore.UintSlot
@@ -2626,7 +2496,6 @@ type FlexibleInstrumentUpdateDecoder struct {
 	s_FlexibleInstrumentUpdateOptAttribute                        fastcore.UintSlot
 	s_FlexibleInstrumentUpdateExerciseStyle                       fastcore.UintSlot
 	s_FlexibleInstrumentUpdateSettlMethod                         fastcore.UintSlot
-	s_FlexibleInstrumentUpdateMarketSegmentGrpLen                 fastcore.UintSlot
 	s_FlexibleInstrumentUpdateTransactTime                        fastcore.IntSlot
 	s_FlexibleInstrumentUpdateMarketSegmentGrpElemMarketSegmentID fastcore.UintSlot
 }
@@ -2638,11 +2507,8 @@ func (d *FlexibleInstrumentUpdateDecoder) decodeFlexibleInstrumentUpdate(r *fast
 	m.HasPutOrCall = false
 	m.HasOptAttribute = false
 	m.HasExerciseStyle = false
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("BP"), &d.s_FlexibleInstrumentUpdateMsgType); err != nil {
-		return err
-	} else if present {
-		m.MsgType = string(v)
-	}
+	m.MsgType = "BP"
+
 	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_FlexibleInstrumentUpdateMsgSeqNum); err != nil {
 		return err
 	} else if present {
@@ -2653,21 +2519,15 @@ func (d *FlexibleInstrumentUpdateDecoder) decodeFlexibleInstrumentUpdate(r *fast
 	} else if present {
 		m.SenderCompID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("A"), &d.s_FlexibleInstrumentUpdateSecurityUpdateAction); err != nil {
-		return err
-	} else if present {
-		m.SecurityUpdateAction = string(v)
-	}
+	m.SecurityUpdateAction = "A"
+
 	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_FlexibleInstrumentUpdateSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
 	}
-	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpConstant, fastcore.ASCIIKind, false, true, []byte("M"), &d.s_FlexibleInstrumentUpdateSecurityIDSource); err != nil {
-		return err
-	} else if present {
-		m.SecurityIDSource = string(v)
-	}
+	m.SecurityIDSource = "M"
+
 	if v, present, err := fastcore.DecodeBytes(r, &pm, fastcore.OpNone, fastcore.ASCIIKind, false, false, nil, &d.s_FlexibleInstrumentUpdateSecurityDesc); err != nil {
 		return err
 	} else if present {
@@ -2718,11 +2578,9 @@ func (d *FlexibleInstrumentUpdateDecoder) decodeFlexibleInstrumentUpdate(r *fast
 		m.SettlMethod = SettlMethod(v)
 	}
 	{
-		n, present, err := fastcore.DecodeUintConstant(&pm, false, 1)
-		if err != nil {
-			return err
-		}
+		present := true
 		if present {
+			const n = 1
 			if cap(m.MarketSegmentGrp) < int(n) {
 				m.MarketSegmentGrp = make([]FlexibleInstrumentUpdateMarketSegmentGrpElem, n)
 			} else {
@@ -2774,12 +2632,9 @@ func (d *FlexibleInstrumentUpdateDecoder) Decode(r *fastcore.Reader, m *Flexible
 // FAST dictionary reset occurs (e.g. at the start of each datagram for a feed
 // with global dictionary scope).
 func (d *FlexibleInstrumentUpdateDecoder) Reset() {
-	d.s_FlexibleInstrumentUpdateMsgType.Reset()
 	d.s_FlexibleInstrumentUpdateMsgSeqNum.Reset()
 	d.s_FlexibleInstrumentUpdateSenderCompID.Reset()
-	d.s_FlexibleInstrumentUpdateSecurityUpdateAction.Reset()
 	d.s_FlexibleInstrumentUpdateSecurityID.Reset()
-	d.s_FlexibleInstrumentUpdateSecurityIDSource.Reset()
 	d.s_FlexibleInstrumentUpdateSecurityDesc.Reset()
 	d.s_FlexibleInstrumentUpdateSecurityType.Reset()
 	d.s_FlexibleInstrumentUpdateProductComplex.Reset()
@@ -2789,7 +2644,6 @@ func (d *FlexibleInstrumentUpdateDecoder) Reset() {
 	d.s_FlexibleInstrumentUpdateOptAttribute.Reset()
 	d.s_FlexibleInstrumentUpdateExerciseStyle.Reset()
 	d.s_FlexibleInstrumentUpdateSettlMethod.Reset()
-	d.s_FlexibleInstrumentUpdateMarketSegmentGrpLen.Reset()
 	d.s_FlexibleInstrumentUpdateTransactTime.Reset()
 	d.s_FlexibleInstrumentUpdateMarketSegmentGrpElemMarketSegmentID.Reset()
 }
