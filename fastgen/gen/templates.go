@@ -165,7 +165,7 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{- end -}}
 
 {{- define "fieldUint" -}}
-	if v, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, {{.Width}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
+	if v, present, err := {{.Call}}; err != nil {
 		return err
 	} else if present {
 		m.{{.Field}} = {{.Assign}}
@@ -299,7 +299,7 @@ MSB-first across its data bits (FAST 1.2). */}}
 
 {{- define "sequence" -}}
 	{
-		n, present, err := fastcore.DecodeUint(r, &pm, {{.Op}}, fastcore.W32, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.LenSlot}})
+		n, present, err := {{.Call}}
 		if err != nil {
 			return err
 		}

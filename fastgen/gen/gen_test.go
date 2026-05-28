@@ -63,7 +63,7 @@ func TestGenerateSimple1(t *testing.T) {
 		"Field1 uint64",
 		"type TestDecoder struct {",
 		"func (d *TestDecoder) Decode(r *fastcore.Reader, m *Test) error",
-		"fastcore.DecodeUint(r, &pm, fastcore.OpCopy",
+		"fastcore.DecodeUintCopy(r, &pm",
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("generated code missing %q\n---\n%s", want, s)

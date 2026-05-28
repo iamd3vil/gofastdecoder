@@ -17,6 +17,47 @@ package fastcore
 func DecodeUint(r *Reader, pm *PMAP, op Operator, width IntWidth, optional, hasInitial bool, initial uint64, slot *UintSlot) (val uint64, present bool, err error) {
 	switch op {
 	case OpNone:
+		return DecodeUintNone(r, optional)
+
+	case OpConstant:
+		return DecodeUintConstant(pm, optional, initial)
+
+	case OpDefault:
+		return DecodeUintDefault(r, pm, optional, hasInitial, initial)
+
+	case OpCopy:
+		return DecodeUintCopy(r, pm, optional, hasInitial, initial, slot)
+
+	case OpIncrement:
+		return DecodeUintIncrement(r, pm, width, optional, hasInitial, initial, slot)
+
+	case OpDelta:
+		return DecodeUintDelta(r, optional, hasInitial, initial, slot)
+	}
+	return 0, false, errUnsupportedOperator(op)
+}
+
+func DecodeUintNone(r *Reader, optional bool) (uint64, bool, error) {
+	if optional {
+		v, null, err := r.ReadNullableUint()
+		if err != nil || null {
+			return 0, false, err
+		}
+		return v, true, nil
+	}
+	v, err := r.ReadUint()
+	return v, err == nil, err
+}
+
+func DecodeUintConstant(pm *PMAP, optional bool, initial uint64) (uint64, bool, error) {
+	if !optional || pm.Next() {
+		return initial, true, nil
+	}
+	return 0, false, nil
+}
+
+func DecodeUintDefault(r *Reader, pm *PMAP, optional, hasInitial bool, initial uint64) (uint64, bool, error) {
+	if pm.Next() {
 		if optional {
 			v, null, err := r.ReadNullableUint()
 			if err != nil || null {
@@ -26,96 +67,104 @@ func DecodeUint(r *Reader, pm *PMAP, op Operator, width IntWidth, optional, hasI
 		}
 		v, err := r.ReadUint()
 		return v, err == nil, err
-
-	case OpConstant:
-		if !optional {
-			return initial, true, nil
-		}
-		if pm.Next() {
-			return initial, true, nil
-		}
+	}
+	if hasInitial {
+		return initial, true, nil
+	}
+	if optional {
 		return 0, false, nil
+	}
+	return 0, false, ErrD5
+}
 
-	case OpDefault:
-		if pm.Next() { // value present in stream
-			if optional {
-				v, null, err := r.ReadNullableUint()
-				if err != nil || null {
-					return 0, false, err // NULL leaves previous value unchanged (§10.5.1)
-				}
-				return v, true, nil
-			}
-			v, err := r.ReadUint()
-			return v, err == nil, err
-		}
-		// Not present: use the initial value.
+func DecodeUintCopy(r *Reader, pm *PMAP, optional, hasInitial bool, initial uint64, slot *UintSlot) (uint64, bool, error) {
+	if pm.Next() {
+		return readUintPrevious(r, optional, slot)
+	}
+	return resolveUintPrevious(optional, hasInitial, initial, slot)
+}
+
+func DecodeUintIncrement(r *Reader, pm *PMAP, width IntWidth, optional, hasInitial bool, initial uint64, slot *UintSlot) (uint64, bool, error) {
+	if pm.Next() {
+		return readUintPrevious(r, optional, slot)
+	}
+	switch slot.State {
+	case Assigned:
+		slot.Val = wrapUint(slot.Val+1, width)
+		return slot.Val, true, nil
+	case Undefined:
 		if hasInitial {
+			slot.State, slot.Val = Assigned, initial
 			return initial, true, nil
 		}
 		if optional {
+			slot.State = Empty
 			return 0, false, nil
 		}
 		return 0, false, ErrD5
+	default:
+		if optional {
+			return 0, false, nil
+		}
+		return 0, false, ErrD6
+	}
+}
 
-	case OpCopy, OpIncrement:
-		if pm.Next() { // value present -> becomes the new previous value
-			if optional {
-				v, null, err := r.ReadNullableUint()
-				if err != nil {
-					return 0, false, err
-				}
-				if null {
-					slot.State = Empty
-					return 0, false, nil
-				}
-				slot.State, slot.Val = Assigned, v
-				return v, true, nil
-			}
-			v, err := r.ReadUint()
-			if err != nil {
-				return 0, false, err
-			}
-			slot.State, slot.Val = Assigned, v
-			return v, true, nil
-		}
-		// Not present: resolve from previous-value state.
-		switch slot.State {
-		case Assigned:
-			if op == OpIncrement {
-				slot.Val = wrapUint(slot.Val+1, width)
-			}
-			return slot.Val, true, nil
-		case Undefined:
-			if hasInitial {
-				slot.State, slot.Val = Assigned, initial
-				return initial, true, nil
-			}
-			if optional {
-				slot.State = Empty
-				return 0, false, nil
-			}
-			return 0, false, ErrD5
-		default: // Empty
-			if optional {
-				return 0, false, nil
-			}
-			return 0, false, ErrD6
-		}
+func DecodeUintDelta(r *Reader, optional, hasInitial bool, initial uint64, slot *UintSlot) (uint64, bool, error) {
+	d, null, err := r.readDelta(optional)
+	if err != nil || null {
+		return 0, false, err
+	}
+	base, err := uintDeltaBase(slot, hasInitial, initial)
+	if err != nil {
+		return 0, false, err
+	}
+	v := uint64(int64(base) + d)
+	slot.State, slot.Val = Assigned, v
+	return v, true, nil
+}
 
-	case OpDelta:
-		d, null, err := r.readDelta(optional)
-		if err != nil || null {
-			return 0, false, err // optional NULL: previous value left untouched
-		}
-		base, err := uintDeltaBase(slot, hasInitial, initial)
+func readUintPrevious(r *Reader, optional bool, slot *UintSlot) (uint64, bool, error) {
+	if optional {
+		v, null, err := r.ReadNullableUint()
 		if err != nil {
 			return 0, false, err
 		}
-		v := uint64(int64(base) + d)
+		if null {
+			slot.State = Empty
+			return 0, false, nil
+		}
 		slot.State, slot.Val = Assigned, v
 		return v, true, nil
 	}
-	return 0, false, errUnsupportedOperator(op)
+	v, err := r.ReadUint()
+	if err != nil {
+		return 0, false, err
+	}
+	slot.State, slot.Val = Assigned, v
+	return v, true, nil
+}
+
+func resolveUintPrevious(optional, hasInitial bool, initial uint64, slot *UintSlot) (uint64, bool, error) {
+	switch slot.State {
+	case Assigned:
+		return slot.Val, true, nil
+	case Undefined:
+		if hasInitial {
+			slot.State, slot.Val = Assigned, initial
+			return initial, true, nil
+		}
+		if optional {
+			slot.State = Empty
+			return 0, false, nil
+		}
+		return 0, false, ErrD5
+	default:
+		if optional {
+			return 0, false, nil
+		}
+		return 0, false, ErrD6
+	}
 }
 
 // uintDeltaBase resolves the base value for an unsigned delta (§6.3.7).

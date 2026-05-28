@@ -27,7 +27,7 @@ type ExtDecoder struct {
 func (d *ExtDecoder) decodeExt(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Ext) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtFlag); err != nil {
+	if v, present, err := fastcore.DecodeUintNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.Flag = fastcore.Bool(v)
@@ -37,7 +37,7 @@ func (d *ExtDecoder) decodeExt(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Ext)
 	} else if present {
 		m.When = fastcore.TimestampUTC(v, fastcore.UnitSecond)
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtKind); err != nil {
+	if v, present, err := fastcore.DecodeUintNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.Kind = ExtKind(v)
@@ -69,7 +69,7 @@ func (d *ExtDecoder) Reset() {
 // isFASTMessage marks Ext as a Message.
 func (*Ext) isFASTMessage() {}
 
-// ExtKind is a generated FAST enum/set type.
+// ExtKind is a generated FAST enum/set type. Constants hold the wire-encoded value.
 type ExtKind uint64
 
 const (

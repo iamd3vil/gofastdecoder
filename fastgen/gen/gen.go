@@ -348,15 +348,13 @@ func (g *generator) sequenceStep(slotPrefix string, s *ast.Sequence) (string, fu
 		lenField = &ast.Field{Name: s.Name + "Length", Type: ast.UInt32, Presence: s.Presence}
 	}
 	lenSlot := g.addSlot(slotPrefix+sname+"Len", lenField)
-	op, _ := operatorExpr(lenField.Op.Kind)
 	hasInit, initExpr, err := intInitial(lenField)
 	if err != nil {
 		return "", nil, err
 	}
 	out, err := render("sequence", struct {
-		Field, Elem, Op, Init, LenSlot string
-		Optional, HasInit              bool
-	}{Field: sname, Elem: elem, Op: op, Init: initExpr, LenSlot: lenSlot, Optional: s.Presence == ast.Optional, HasInit: hasInit})
+		Field, Elem, Call string
+	}{Field: sname, Elem: elem, Call: uintDecodeCall(lenField.Op.Kind, lenField.Type, s.Presence == ast.Optional, hasInit, initExpr, lenSlot)})
 	return out, func() error { return g.nestedMethod(elem, s.Instructions) }, err
 }
 
@@ -381,7 +379,6 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 
 	case ast.UInt32, ast.UInt64, ast.Enum, ast.Set, ast.Boolean:
 		slot := g.addSlot(slotPrefix+fname, f)
-		op, _ := operatorExpr(f.Op.Kind)
 		hasInit, initExpr, err := uintInitial(f)
 		if err != nil {
 			return "", err
@@ -394,10 +391,10 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			assign = g.enumTypeName(f, slotPrefix) + "(v)"
 		}
 		return render("fieldUint", struct {
-			Field, Op, Width, Init, Slot, Assign string
-			Optional, HasInit                    bool
-		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot, Assign: assign,
-			Optional: optional, HasInit: hasInit})
+			Field, Call, Assign string
+			Optional            bool
+		}{Field: fname, Call: uintDecodeCall(f.Op.Kind, f.Type, optional, hasInit, initExpr, slot), Assign: assign,
+			Optional: optional})
 
 	case ast.Decimal:
 		if f.Exponent != nil || f.Mantissa != nil {
@@ -674,6 +671,25 @@ func operatorExpr(k ast.OpKind) (string, bool) {
 		return "fastcore.OpTail", true
 	default:
 		return "fastcore.OpNone", false
+	}
+}
+
+func uintDecodeCall(op ast.OpKind, typ ast.BaseType, optional, hasInitial bool, initial, slot string) string {
+	opt := strconv.FormatBool(optional)
+	init := strconv.FormatBool(hasInitial)
+	switch op {
+	case ast.Constant:
+		return fmt.Sprintf("fastcore.DecodeUintConstant(&pm, %s, %s)", opt, initial)
+	case ast.Default:
+		return fmt.Sprintf("fastcore.DecodeUintDefault(r, &pm, %s, %s, %s)", opt, init, initial)
+	case ast.Copy:
+		return fmt.Sprintf("fastcore.DecodeUintCopy(r, &pm, %s, %s, %s, &d.%s)", opt, init, initial, slot)
+	case ast.Increment:
+		return fmt.Sprintf("fastcore.DecodeUintIncrement(r, &pm, %s, %s, %s, %s, &d.%s)", widthExpr(typ), opt, init, initial, slot)
+	case ast.Delta:
+		return fmt.Sprintf("fastcore.DecodeUintDelta(r, %s, %s, %s, &d.%s)", opt, init, initial, slot)
+	default:
+		return fmt.Sprintf("fastcore.DecodeUintNone(r, %s)", opt)
 	}
 }
 

@@ -22,7 +22,7 @@ type CommonDecoder struct {
 func (d *CommonDecoder) decodeCommon(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Common) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_CommonSeqNum); err != nil {
+	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_CommonSeqNum); err != nil {
 		return err
 	} else if present {
 		m.SeqNum = v
@@ -69,12 +69,12 @@ type MsgDecoder struct {
 func (d *MsgDecoder) decodeMsg(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Msg) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_MsgMsgID); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_MsgMsgID); err != nil {
 		return err
 	} else if present {
 		m.MsgID = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_MsgSeqNum); err != nil {
+	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_MsgSeqNum); err != nil {
 		return err
 	} else if present {
 		m.SeqNum = v
@@ -128,7 +128,7 @@ type WrapDecoder struct {
 func (d *WrapDecoder) decodeWrap(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Wrap) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_WrapMsgID); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_WrapMsgID); err != nil {
 		return err
 	} else if present {
 		m.MsgID = v
@@ -145,7 +145,7 @@ func (d *WrapDecoder) decodeWrapHdr(r *fastcore.Reader, m *WrapHdr) error {
 		return err
 	}
 	d.pmap_WrapHdr = pm.Buffer()
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_WrapHdrSeqNum); err != nil {
+	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_WrapHdrSeqNum); err != nil {
 		return err
 	} else if present {
 		m.SeqNum = v

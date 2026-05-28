@@ -26,17 +26,17 @@ type TestDecoder struct {
 func (d *TestDecoder) decodeTest(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Test) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField1); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_TestField1); err != nil {
 		return err
 	} else if present {
 		m.Field1 = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField2); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_TestField2); err != nil {
 		return err
 	} else if present {
 		m.Field2 = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_TestField3); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_TestField3); err != nil {
 		return err
 	} else if present {
 		m.Field3 = v

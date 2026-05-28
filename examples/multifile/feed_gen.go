@@ -22,7 +22,7 @@ type HeaderDecoder struct {
 func (d *HeaderDecoder) decodeHeader(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Header) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_HeaderSeqNum); err != nil {
+	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_HeaderSeqNum); err != nil {
 		return err
 	} else if present {
 		m.SeqNum = v
@@ -69,12 +69,12 @@ type QuoteDecoder struct {
 func (d *QuoteDecoder) decodeQuote(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Quote) error {
 	pm := *pmArg
 	_ = pm
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpIncrement, fastcore.W32, false, false, 0, &d.s_QuoteSeqNum); err != nil {
+	if v, present, err := fastcore.DecodeUintIncrement(r, &pm, fastcore.W32, false, false, 0, &d.s_QuoteSeqNum); err != nil {
 		return err
 	} else if present {
 		m.SeqNum = v
 	}
-	if v, present, err := fastcore.DecodeUint(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_QuotePrice); err != nil {
+	if v, present, err := fastcore.DecodeUintCopy(r, &pm, false, false, 0, &d.s_QuotePrice); err != nil {
 		return err
 	} else if present {
 		m.Price = v
