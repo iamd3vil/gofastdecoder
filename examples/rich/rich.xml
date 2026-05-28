@@ -1,0 +1,27 @@
+<templates xmlns="http://www.fixprotocol.org/ns/fast/td/1.1">
+  <template name="MarketData" id="100">
+    <uInt32 name="seqNum"/>
+    <uInt64 name="sendingTime"/>
+    <string name="symbol"/>
+    <decimal name="price">
+      <exponent/>
+      <mantissa/>
+    </decimal>
+    <group name="stats">
+      <uInt32 name="bidCount"/>
+      <byteVector name="payload">
+        <length name="payloadLen"/>
+      </byteVector>
+    </group>
+    <sequence name="entries">
+      <length name="entryCount"/>
+      <uInt32 name="action"/>
+      <string name="entryType"/>
+      <decimal name="entryPx">
+        <exponent/>
+        <mantissa/>
+      </decimal>
+      <uInt32 name="size"/>
+    </sequence>
+  </template>
+</templates>

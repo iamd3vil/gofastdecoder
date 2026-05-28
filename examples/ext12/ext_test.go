@@ -31,3 +31,21 @@ func TestExtDecode(t *testing.T) {
 		t.Errorf("Kind = %d, want %d (ExtKindC)", m.Kind, ExtKindC)
 	}
 }
+
+func BenchmarkExtDecode(b *testing.B) {
+	var dec ExtDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0x80, 0x81, 0x00, 0xE4, 0x82}
+	var m Ext
+	if err := dec.Decode(fastcore.NewReader(frame), &m); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

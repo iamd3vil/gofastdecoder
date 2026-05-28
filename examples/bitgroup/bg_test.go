@@ -34,3 +34,21 @@ func TestBitGroup(t *testing.T) {
 		t.Errorf("PriceLevel = %d, want 5", m.PriceLevel)
 	}
 }
+
+func BenchmarkBitGroupDecode(b *testing.B) {
+	var dec LevelDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0x80, 0xDD}
+	var m Level
+	if err := dec.Decode(fastcore.NewReader(frame), &m); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

@@ -24,3 +24,21 @@ func TestCrossFileRef(t *testing.T) {
 		t.Errorf("Price = %d, want 50", m.Price)
 	}
 }
+
+func BenchmarkCrossFileTemplateRef(b *testing.B) {
+	var dec QuoteDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0xE0, 0xE4, 0xB2}
+	var m Quote
+	if err := dec.Decode(fastcore.NewReader(frame), &m); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

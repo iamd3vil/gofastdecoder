@@ -55,6 +55,23 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
+func BenchmarkRouterDecode(b *testing.B) {
+	var rt Router
+	r := &fastcore.Reader{}
+	frame := []byte{0xF8, 0x81, 0x8A, 0x94, 0x9E}
+	if _, err := rt.Decode(fastcore.NewReader(frame)); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if _, err := rt.Decode(r); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // TestZeroAlloc enforces the zero-allocation hot path as a gate (PLAN.md step 8).
 func TestZeroAlloc(t *testing.T) {
 	var dec TestDecoder

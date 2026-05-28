@@ -44,3 +44,21 @@ func TestTemplateRefInGroup(t *testing.T) {
 		t.Errorf("Hdr.SeqNum = %d, want 1", m.Hdr.SeqNum)
 	}
 }
+
+func BenchmarkTemplateRefInGroup(b *testing.B) {
+	var dec WrapDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0xC0, 0x8A, 0xC0, 0x81}
+	var m Wrap
+	if err := dec.Decode(fastcore.NewReader(frame), &m); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

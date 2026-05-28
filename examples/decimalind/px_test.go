@@ -67,3 +67,39 @@ func TestOptionalDecimalIndividual(t *testing.T) {
 		t.Errorf("msg3: %d bytes left — mantissa bit/value wrongly consumed?", r.Remaining())
 	}
 }
+
+func BenchmarkDecimalIndividual(b *testing.B) {
+	var dec PxDecoder
+	r := &fastcore.Reader{}
+	frame := []byte{0xC0, 0xFE, 0x85}
+	var m Px
+	if err := dec.Decode(fastcore.NewReader(frame), &m); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkOptionalDecimalCopy(b *testing.B) {
+	var dec OptPxDecoder
+	r := &fastcore.Reader{}
+	var m OptPx
+	if err := dec.Decode(fastcore.NewReader([]byte{0xE0, 0xFE, 0x85}), &m); err != nil {
+		b.Fatal(err)
+	}
+	frame := []byte{0x80}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		r.Reset(frame)
+		if err := dec.Decode(r, &m); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
