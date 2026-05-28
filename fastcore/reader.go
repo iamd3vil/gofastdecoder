@@ -46,13 +46,23 @@ func (r *Reader) Remaining() int { return len(r.buf) - r.pos }
 // It enforces a ceiling of 64 significant bits (10 groups of 7 bits, with the
 // 10th group only contributing its lowest bit) — anything wider overflows.
 func (r *Reader) readEntityUnsigned() (uint64, error) {
+	if r.pos >= len(r.buf) {
+		return 0, ErrEndOfStream
+	}
+	b := r.buf[r.pos]
+	r.pos++
+	if b&0x80 != 0 {
+		return uint64(b & 0x7f), nil
+	}
+
 	var val uint64
-	groups := 0
+	groups := 1
+	val = uint64(b & 0x7f)
 	for {
 		if r.pos >= len(r.buf) {
 			return 0, ErrEndOfStream
 		}
-		b := r.buf[r.pos]
+		b = r.buf[r.pos]
 		r.pos++
 		groups++
 		if groups > 10 || (groups == 10 && val > (^uint64(0))>>7) {
@@ -72,16 +82,27 @@ func (r *Reader) readEntitySigned() (int64, error) {
 	if r.pos >= len(r.buf) {
 		return 0, ErrEndOfStream
 	}
+	b := r.buf[r.pos]
+	r.pos++
+	if b&0x80 != 0 {
+		val := int64(b & 0x7f)
+		if b&0x40 != 0 {
+			val |= ^int64(0x7f)
+		}
+		return val, nil
+	}
+
 	var val int64
-	if r.buf[r.pos]&0x40 != 0 {
+	if b&0x40 != 0 {
 		val = -1
 	}
-	groups := 0
+	groups := 1
+	val = (val << 7) | int64(b&0x7f)
 	for {
 		if r.pos >= len(r.buf) {
 			return 0, ErrEndOfStream
 		}
-		b := r.buf[r.pos]
+		b = r.buf[r.pos]
 		r.pos++
 		groups++
 		if groups > 10 {
