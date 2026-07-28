@@ -341,6 +341,15 @@ func (d *MassInstrumentStateChangeDecoder) decodeMassInstrumentStateChange(r *fa
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence SecMassStatGrp length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.SecMassStatGrp) < int(n) {
 				m.SecMassStatGrp = make([]MassInstrumentStateChangeSecMassStatGrpElem, n)
 			} else {
@@ -750,6 +759,15 @@ func (d *DepthIncrementalDecoder) decodeDepthIncremental(r *fastcore.Reader, pmA
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence MDIncGrp length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.MDIncGrp) < int(n) {
 				m.MDIncGrp = make([]DepthIncrementalMDIncGrpElem, n)
 			} else {
@@ -1161,6 +1179,15 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence InstrmtLegGrp length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.InstrmtLegGrp) < int(n) {
 				m.InstrmtLegGrp = make([]ComplexInstrumentUpdateInstrmtLegGrpElem, n)
 			} else {
@@ -1808,6 +1835,15 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshot(r *fastcore.Reader, pmArg *fa
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence MDSshGrp length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.MDSshGrp) < int(n) {
 				m.MDSshGrp = make([]DepthSnapshotMDSshGrpElem, n)
 			} else {
@@ -2339,6 +2375,15 @@ func (d *TopOfBookImpliedDecoder) decodeTopOfBookImplied(r *fastcore.Reader, pmA
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence MDIncGrp length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.MDIncGrp) < int(n) {
 				m.MDIncGrp = make([]TopOfBookImpliedMDIncGrpElem, n)
 			} else {

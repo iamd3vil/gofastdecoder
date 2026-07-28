@@ -366,6 +366,9 @@ func (g *generator) sequenceStep(slotPrefix string, s *ast.Sequence) (string, fu
 	if err != nil {
 		return "", nil, err
 	}
+	// The rendered sequence rejects an out-of-range length with a formatted
+	// error.
+	g.imports["fmt"] = true
 	out, err := render("sequence", struct {
 		Field, Elem, Call string
 	}{Field: sname, Elem: elem, Call: uintDecodeCall(lenField.Op.Kind, lenField.Type, s.Presence == ast.Optional, hasInit, initExpr, lenSlot)})

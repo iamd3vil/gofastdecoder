@@ -313,6 +313,15 @@ MSB-first across its data bits (FAST 1.2). */}}
 			return err
 		}
 		if present {
+			// A length field comes off the wire unvalidated, and it is wide
+			// enough (uInt32/uInt64) to name a slice no machine can hold.
+			// Every element costs at least one byte to encode, so a length
+			// past the end of the frame is provably corrupt — reject it
+			// before allocating, or a single damaged datagram takes the
+			// process down with an unrecoverable out-of-memory.
+			if n > uint64(r.Remaining()) {
+				return fmt.Errorf("fast: sequence {{.Field}} length %d exceeds %d remaining bytes", n, r.Remaining())
+			}
 			if cap(m.{{.Field}}) < int(n) {
 				m.{{.Field}} = make([]{{.Elem}}, n)
 			} else {

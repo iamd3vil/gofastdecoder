@@ -47,6 +47,36 @@ func TestDepthSnapshotDecode(t *testing.T) {
 	}
 }
 
+// TestSequenceLengthIsBoundedByTheFrame pins the guard on sequence lengths.
+// NoMDEntries is a uInt32 read straight off the wire, so a corrupt or
+// misframed value can name a slice no machine can hold — sizing the entry
+// slice from it directly turns one damaged datagram into an unrecoverable
+// "fatal error: out of memory" rather than a decode error the caller can
+// handle. Every entry costs at least its presence map, so a length past the
+// end of the frame is provably corrupt.
+func TestSequenceLengthIsBoundedByTheFrame(t *testing.T) {
+	var out []byte
+	out = append(out, pmap(true, true, true, true, true, true, false, true)...)
+	out = appendNullableUint(out, 1, false) // MsgSeqNum
+	out = appendUint(out, 10)               // SenderCompID
+	out = appendNullableUint(out, 1, false) // LastMsgSeqNumProcessed
+	out = appendNullableUint(out, 0, false) // RefreshIndicator
+	out = appendUint(out, 2)                // MarketSegmentID
+	out = appendInt(out, 1000)              // SecurityID delta
+	out = appendUint(out, 0)                // ProductComplex
+	out = appendNullableUint(out, 0, true)  // TESSecurityStatus
+	out = appendInt(out, 100000)            // LastUpdateTime delta
+	out = appendNullableInt(out, 0, true)   // TotalBuyQuantity
+	out = appendNullableInt(out, 0, true)   // TotalSellQuantity
+	out = appendUint(out, 4294967294)       // NoMDEntries — corrupt
+
+	var dec DepthSnapshotDecoder
+	var m DepthSnapshot
+	if err := dec.Decode(fastcore.NewReader(out), &m); err == nil {
+		t.Fatalf("decode accepted NoMDEntries=%d with no entry bytes left, got %d entries", 4294967294, len(m.MDSshGrp))
+	}
+}
+
 func BenchmarkDepthIncrementalDecode(b *testing.B) {
 	var dec DepthIncrementalDecoder
 	r := &fastcore.Reader{}
@@ -90,14 +120,14 @@ func buildDepthIncrementalFrame() []byte {
 	out = appendUint(out, 4)  // NoMDEntries
 	for i := 0; i < 4; i++ {
 		out = append(out, pmap(false, true, true, true, true, false)...)
-		out = appendUint(out, uint64(i%2))        // MDUpdateAction
-		out = appendUint(out, uint64(i%2))        // MDEntryType
-		out = appendInt(out, int64(1000+i))       // SecurityID
-		out = appendNullableInt(out, -2, false)   // MDEntryPx exponent delta
-		out = appendInt(out, int64(1000+i))       // MDEntryPx mantissa delta
-		out = appendNullableInt(out, 0, false)    // MDEntrySize exponent delta
-		out = appendInt(out, int64(10+i))         // MDEntrySize mantissa delta
-		out = appendNullableInt(out, 1, false)    // NumberOfOrders delta
+		out = appendUint(out, uint64(i%2))      // MDUpdateAction
+		out = appendUint(out, uint64(i%2))      // MDEntryType
+		out = appendInt(out, int64(1000+i))     // SecurityID
+		out = appendNullableInt(out, -2, false) // MDEntryPx exponent delta
+		out = appendInt(out, int64(1000+i))     // MDEntryPx mantissa delta
+		out = appendNullableInt(out, 0, false)  // MDEntrySize exponent delta
+		out = appendInt(out, int64(10+i))       // MDEntrySize mantissa delta
+		out = appendNullableInt(out, 1, false)  // NumberOfOrders delta
 		out = appendNullableUint(out, uint64(i+1), false)
 		out = appendNullableInt(out, int64(100000+i), false) // MDEntryTime
 		out = appendNullableUint(out, 0, true)               // PotentialSecurityTradingEvent
