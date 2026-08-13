@@ -32,7 +32,7 @@ func (d *ExtDecoder) decodeExt(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Ext)
 	} else if present {
 		m.Flag = fastcore.Bool(v)
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ExtWhen); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.When = fastcore.TimestampUTC(v, fastcore.UnitSecond)

@@ -23,10 +23,10 @@ type PxDecoder struct {
 func (d *PxDecoder) decodePx(r *fastcore.Reader, pmArg *fastcore.PMAP, m *Px) error {
 	pm := *pmArg
 	_ = pm
-	if exp, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W32, false, false, 0, &d.s_PxSizeExp); err != nil {
+	if exp, present, err := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_PxSizeExp); err != nil {
 		return err
 	} else if present {
-		mant, _, merr := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_PxSizeMant)
+		mant, _, merr := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_PxSizeMant)
 		if merr != nil {
 			return merr
 		}
@@ -76,10 +76,10 @@ func (d *OptPxDecoder) decodeOptPx(r *fastcore.Reader, pmArg *fastcore.PMAP, m *
 	pm := *pmArg
 	_ = pm
 	m.HasSize = false
-	if exp, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W32, true, false, 0, &d.s_OptPxSizeExp); err != nil {
+	if exp, present, err := fastcore.DecodeIntCopy(r, &pm, true, false, 0, &d.s_OptPxSizeExp); err != nil {
 		return err
 	} else if present {
-		mant, _, merr := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_OptPxSizeMant)
+		mant, _, merr := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_OptPxSizeMant)
 		if merr != nil {
 			return merr
 		}

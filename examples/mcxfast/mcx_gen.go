@@ -150,7 +150,7 @@ func (d *ProductStateChangeDecoder) decodeProductStateChange(r *fastcore.Reader,
 	} else if present {
 		m.FastMarketIndicator = FastMarketIndicator(v)
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ProductStateChangeTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -324,7 +324,7 @@ func (d *MassInstrumentStateChangeDecoder) decodeMassInstrumentStateChange(r *fa
 		m.MassSoldOutIndicator = SoldOutIndicator(v)
 		m.HasMassSoldOutIndicator = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_MassInstrumentStateChangeTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_MassInstrumentStateChangeTransactTime); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -381,7 +381,7 @@ func (d *MassInstrumentStateChangeDecoder) decodeMassInstrumentStateChangeSecMas
 	m.HasSecurityTradingEvent = false
 	m.HasSoldOutIndicator = false
 	m.HasTESSecurityStatus = false
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_MassInstrumentStateChangeSecMassStatGrpElemSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -531,7 +531,7 @@ func (d *InstrumentStateChangeDecoder) decodeInstrumentStateChange(r *fastcore.R
 	} else if present {
 		m.MarketSegmentID = v
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_InstrumentStateChangeSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -571,7 +571,7 @@ func (d *InstrumentStateChangeDecoder) decodeInstrumentStateChange(r *fastcore.R
 		m.SoldOutIndicator = SoldOutIndicator(v)
 		m.HasSoldOutIndicator = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_InstrumentStateChangeTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_InstrumentStateChangeTransactTime); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -815,7 +815,7 @@ func (d *DepthIncrementalDecoder) decodeDepthIncrementalMDIncGrpElem(r *fastcore
 	} else if present {
 		m.MDEntryType = MDEntryType(v)
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_DepthIncrementalMDIncGrpElemSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_DepthIncrementalMDIncGrpElemSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -846,7 +846,7 @@ func (d *DepthIncrementalDecoder) decodeDepthIncrementalMDIncGrpElem(r *fastcore
 		m.MDPriceLevel = v
 		m.HasMDPriceLevel = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, true, false, 0, &d.s_DepthIncrementalMDIncGrpElemMDEntryTime); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, true, false, 0, &d.s_DepthIncrementalMDIncGrpElemMDEntryTime); err != nil {
 		return err
 	} else if present {
 		m.MDEntryTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -937,13 +937,13 @@ func (d *DepthIncrementalDecoder) decodeDepthIncrementalMDIncGrpElemTradeEntryGr
 		m.MultiLegPriceModel = MultiLegPriceModel(v)
 		m.HasMultiLegPriceModel = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, true, false, 0, &d.s_DepthIncrementalMDIncGrpElemTradeEntryGrpAggressorTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, true); err != nil {
 		return err
 	} else if present {
 		m.AggressorTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
 		m.HasAggressorTime = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, true, false, 0, &d.s_DepthIncrementalMDIncGrpElemTradeEntryGrpRequestTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, true); err != nil {
 		return err
 	} else if present {
 		m.RequestTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -1142,7 +1142,7 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 	}
 	m.SecurityUpdateAction = "A"
 
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ComplexInstrumentUpdateSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -1220,7 +1220,7 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdate(r *fastco
 			m.MarketSegmentGrp = m.MarketSegmentGrp[:0]
 		}
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ComplexInstrumentUpdateTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -1239,7 +1239,7 @@ func (d *ComplexInstrumentUpdateDecoder) decodeComplexInstrumentUpdateInstrmtLeg
 	} else if present {
 		m.LegSymbol = v
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_ComplexInstrumentUpdateInstrmtLegGrpElemLegSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.LegSecurityID = v
@@ -1408,7 +1408,7 @@ func (d *QuoteRequestDecoder) decodeQuoteRequestQuotReqGrpElem(r *fastcore.Reade
 	d.pmap_QuoteRequestQuotReqGrpElem = pm.Buffer()
 	m.HasSide = false
 	m.HasOrderQty = false
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_QuoteRequestQuotReqGrpElemSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_QuoteRequestQuotReqGrpElemSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -1427,7 +1427,7 @@ func (d *QuoteRequestDecoder) decodeQuoteRequestQuotReqGrpElem(r *fastcore.Reade
 		m.OrderQty = fastcore.Decimal{Mant: mant, Exp: exp}
 		m.HasOrderQty = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_QuoteRequestQuotReqGrpElemTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_QuoteRequestQuotReqGrpElemTransactTime); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -1525,7 +1525,7 @@ func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fast
 	} else if present {
 		m.MarketSegmentID = v
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_CrossRequestSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -1567,7 +1567,7 @@ func (d *CrossRequestDecoder) decodeCrossRequest(r *fastcore.Reader, pmArg *fast
 		m.MDEntryPx = v
 		m.HasMDEntryPx = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_CrossRequestTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -1789,7 +1789,7 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshot(r *fastcore.Reader, pmArg *fa
 	} else if present {
 		m.MarketSegmentID = v
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_DepthSnapshotSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_DepthSnapshotSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -1812,7 +1812,7 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshot(r *fastcore.Reader, pmArg *fa
 		m.TESSecurityStatus = SecurityStatus(v)
 		m.HasTESSecurityStatus = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_DepthSnapshotLastUpdateTime); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_DepthSnapshotLastUpdateTime); err != nil {
 		return err
 	} else if present {
 		m.LastUpdateTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -2021,7 +2021,7 @@ func (d *DepthSnapshotDecoder) decodeDepthSnapshotMDSshGrpElem(r *fastcore.Reade
 		m.MDPriceLevel = v
 		m.HasMDPriceLevel = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, true, false, 0, &d.s_DepthSnapshotMDSshGrpElemMDEntryTime); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, true, false, 0, &d.s_DepthSnapshotMDSshGrpElemMDEntryTime); err != nil {
 		return err
 	} else if present {
 		m.MDEntryTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -2260,7 +2260,7 @@ func (d *IndexStatsDecoder) decodeIndexStats(r *fastcore.Reader, pmArg *fastcore
 		m.CloseIndexFlag = IndexCloseFlag(v)
 		m.HasCloseIndexFlag = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpDelta, fastcore.W64, false, false, 0, &d.s_IndexStatsTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntDelta(r, false, false, 0, &d.s_IndexStatsTransactTime); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -2427,7 +2427,7 @@ func (d *TopOfBookImpliedDecoder) decodeTopOfBookImpliedMDIncGrpElem(r *fastcore
 	} else if present {
 		m.MDSubBookType = MDSubBookType(v)
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, false, false, 0, &d.s_TopOfBookImpliedMDIncGrpElemSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, false, false, 0, &d.s_TopOfBookImpliedMDIncGrpElemSecurityID); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -2446,7 +2446,7 @@ func (d *TopOfBookImpliedDecoder) decodeTopOfBookImpliedMDIncGrpElem(r *fastcore
 		m.MDEntrySize = fastcore.Decimal{Mant: mant, Exp: exp}
 		m.HasMDEntrySize = true
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpCopy, fastcore.W64, true, false, 0, &d.s_TopOfBookImpliedMDIncGrpElemMDEntryTime); err != nil {
+	if v, present, err := fastcore.DecodeIntCopy(r, &pm, true, false, 0, &d.s_TopOfBookImpliedMDIncGrpElemMDEntryTime); err != nil {
 		return err
 	} else if present {
 		m.MDEntryTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)
@@ -2566,7 +2566,7 @@ func (d *FlexibleInstrumentUpdateDecoder) decodeFlexibleInstrumentUpdate(r *fast
 	}
 	m.SecurityUpdateAction = "A"
 
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_FlexibleInstrumentUpdateSecurityID); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.SecurityID = v
@@ -2640,7 +2640,7 @@ func (d *FlexibleInstrumentUpdateDecoder) decodeFlexibleInstrumentUpdate(r *fast
 			m.MarketSegmentGrp = m.MarketSegmentGrp[:0]
 		}
 	}
-	if v, present, err := fastcore.DecodeInt(r, &pm, fastcore.OpNone, fastcore.W64, false, false, 0, &d.s_FlexibleInstrumentUpdateTransactTime); err != nil {
+	if v, present, err := fastcore.DecodeIntNone(r, false); err != nil {
 		return err
 	} else if present {
 		m.TransactTime = fastcore.TimestampUTC(v, fastcore.UnitNanosecond)

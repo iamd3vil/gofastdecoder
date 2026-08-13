@@ -400,15 +400,14 @@ func (g *generator) fieldStep(slotPrefix string, f *ast.Field) (string, error) {
 			}{Field: fname, Assign: assign, Optional: optional})
 		}
 		slot := g.addSlot(slotPrefix+fname, f)
-		op, _ := operatorExpr(f.Op.Kind)
 		hasInit, initExpr, err := intInitial(f)
 		if err != nil {
 			return "", err
 		}
 		return render("fieldInt", struct {
-			Field, Op, Width, Init, Slot, Unit string
-			Optional, HasInit, IsTimestamp     bool
-		}{Field: fname, Op: op, Width: widthExpr(f.Type), Init: initExpr, Slot: slot, Unit: unitExpr(f.Unit),
+			Field, Call, Unit              string
+			Optional, HasInit, IsTimestamp bool
+		}{Field: fname, Call: intDecodeCall(f.Op.Kind, widthExpr(f.Type), optional, hasInit, initExpr, slot), Unit: unitExpr(f.Unit),
 			Optional: optional, HasInit: hasInit, IsTimestamp: f.Type == ast.Timestamp})
 
 	case ast.UInt32, ast.UInt64, ast.Enum, ast.Set, ast.Boolean:
@@ -501,31 +500,30 @@ func (g *generator) decimalIndividualStep(slotPrefix string, f *ast.Field, optio
 	expOp, expHas, expInit := opIntParts(f.Exponent)
 	mantOp, mantHas, mantInit := opIntParts(f.Mantissa)
 	return render("fieldDecimalIndividual", struct {
-		Field, ExpOp, ExpInit, ExpSlot, MantOp, MantInit, MantSlot string
-		Optional, ExpHasInit, MantHasInit                          bool
+		Field, ExpCall, MantCall string
+		Optional                 bool
 	}{
-		Field: fname,
-		ExpOp: expOp, ExpInit: expInit, ExpSlot: expSlot, ExpHasInit: expHas,
-		MantOp: mantOp, MantInit: mantInit, MantSlot: mantSlot, MantHasInit: mantHas,
+		Field:    fname,
+		ExpCall:  intDecodeCall(expOp, "fastcore.W32", optional, expHas, expInit, expSlot),
+		MantCall: intDecodeCall(mantOp, "fastcore.W64", false, mantHas, mantInit, mantSlot),
 		Optional: optional,
 	})
 }
 
-// opIntParts returns the operator expression, has-initial flag, and integer
-// initial expression for an optional decimal component operator (nil = none).
-func opIntParts(op *ast.Op) (opExpr string, hasInit bool, initExpr string) {
+// opIntParts returns the operator kind, has-initial flag, and integer initial
+// expression for an optional decimal component operator (nil = none).
+func opIntParts(op *ast.Op) (kind ast.OpKind, hasInit bool, initExpr string) {
 	if op == nil {
-		return "fastcore.OpNone", false, "0"
+		return ast.NoOp, false, "0"
 	}
-	expr, _ := operatorExpr(op.Kind)
 	if !op.HasInitial {
-		return expr, false, "0"
+		return op.Kind, false, "0"
 	}
 	n, err := strconv.ParseInt(strings.TrimSpace(op.Initial), 10, 64)
 	if err != nil {
-		return expr, false, "0"
+		return op.Kind, false, "0"
 	}
-	return expr, true, strconv.FormatInt(n, 10)
+	return op.Kind, true, strconv.FormatInt(n, 10)
 }
 
 // bitGroupStep renders the decode for a bit group: read the SBIT entity, then
@@ -762,6 +760,27 @@ func uintDecodeCall(op ast.OpKind, typ ast.BaseType, optional, hasInitial bool, 
 		return fmt.Sprintf("fastcore.DecodeUintDelta(r, %s, %s, %s, &d.%s)", opt, init, initial, slot)
 	default:
 		return fmt.Sprintf("fastcore.DecodeUintNone(r, %s)", opt)
+	}
+}
+
+// intDecodeCall mirrors uintDecodeCall for signed fields, emitting a direct
+// per-operator call instead of the DecodeInt dispatcher.
+func intDecodeCall(op ast.OpKind, width string, optional, hasInitial bool, initial, slot string) string {
+	opt := strconv.FormatBool(optional)
+	init := strconv.FormatBool(hasInitial)
+	switch op {
+	case ast.Constant:
+		return fmt.Sprintf("fastcore.DecodeIntConstant(&pm, %s, %s)", opt, initial)
+	case ast.Default:
+		return fmt.Sprintf("fastcore.DecodeIntDefault(r, &pm, %s, %s, %s)", opt, init, initial)
+	case ast.Copy:
+		return fmt.Sprintf("fastcore.DecodeIntCopy(r, &pm, %s, %s, %s, &d.%s)", opt, init, initial, slot)
+	case ast.Increment:
+		return fmt.Sprintf("fastcore.DecodeIntIncrement(r, &pm, %s, %s, %s, %s, &d.%s)", width, opt, init, initial, slot)
+	case ast.Delta:
+		return fmt.Sprintf("fastcore.DecodeIntDelta(r, %s, %s, %s, &d.%s)", opt, init, initial, slot)
+	default:
+		return fmt.Sprintf("fastcore.DecodeIntNone(r, %s)", opt)
 	}
 }
 

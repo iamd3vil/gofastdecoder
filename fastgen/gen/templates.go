@@ -155,7 +155,7 @@ func (rt *Router) Decode(r *fastcore.Reader) (Message, error) {
 {{- end -}}
 
 {{- define "fieldInt" -}}
-	if v, present, err := fastcore.DecodeInt(r, &pm, {{.Op}}, {{.Width}}, {{.Optional}}, {{.HasInit}}, {{.Init}}, &d.{{.Slot}}); err != nil {
+	if v, present, err := {{.Call}}; err != nil {
 		return err
 	} else if present {
 {{if .IsTimestamp}}		m.{{.Field}} = fastcore.TimestampUTC(v, {{.Unit}})
@@ -217,10 +217,10 @@ const (
 {{- end -}}
 
 {{- define "fieldDecimalIndividual" -}}
-	if exp, present, err := fastcore.DecodeInt(r, &pm, {{.ExpOp}}, fastcore.W32, {{.Optional}}, {{.ExpHasInit}}, {{.ExpInit}}, &d.{{.ExpSlot}}); err != nil {
+	if exp, present, err := {{.ExpCall}}; err != nil {
 		return err
 	} else if present {
-		mant, _, merr := fastcore.DecodeInt(r, &pm, {{.MantOp}}, fastcore.W64, false, {{.MantHasInit}}, {{.MantInit}}, &d.{{.MantSlot}})
+		mant, _, merr := {{.MantCall}}
 		if merr != nil {
 			return merr
 		}
