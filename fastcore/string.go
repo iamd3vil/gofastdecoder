@@ -14,55 +14,54 @@ type stringError string
 
 func (e stringError) Error() string { return string(e) }
 
-// readASCIIEntity collects one stop-bit entity and returns its data bytes
-// (low 7 bits of each byte), without interpreting preambles.
-func (r *Reader) readASCIIEntity() ([]byte, error) {
-	start := r.pos
+// readASCIIBytes reads one ASCII entity and returns its decoded value bytes.
+// The result is backed by r.scratch and only valid until the next ASCII read
+// on r; callers that retain it must copy.
+func (r *Reader) readASCIIBytes(nullable bool) (b []byte, null bool, err error) {
+	buf, pos := r.buf, r.pos
+	start := pos
 	for {
-		if r.pos >= len(r.buf) {
-			return nil, ErrEndOfStream
+		if pos >= len(buf) {
+			r.pos = pos
+			return nil, false, ErrEndOfStream
 		}
-		b := r.buf[r.pos]
-		r.pos++
-		if b&0x80 != 0 {
+		if buf[pos]&0x80 != 0 {
+			pos++
 			break
 		}
+		pos++
 	}
-	out := make([]byte, 0, r.pos-start)
-	for i := start; i < r.pos; i++ {
-		out = append(out, r.buf[i]&0x7f)
+	r.pos = pos
+	// Only the final byte carries the stop bit, so copy and mask just that one.
+	n := pos - start
+	if cap(r.scratch) < n {
+		r.scratch = make([]byte, n)
 	}
-	return out, nil
+	data := r.scratch[:n]
+	copy(data, buf[start:pos])
+	data[n-1] &= 0x7f
+	return interpretASCII(data, nullable)
 }
 
-// ReadASCII reads a mandatory ASCII string. The returned slice is freshly
-// allocated (callers that need to retain it across reads get a stable copy).
+// ReadASCII reads a mandatory ASCII string.
 func (r *Reader) ReadASCII() (string, error) {
-	data, err := r.readASCIIEntity()
-	if err != nil {
-		return "", err
-	}
-	s, _, err := interpretASCII(data, false)
-	return s, err
+	b, _, err := r.readASCIIBytes(false)
+	return string(b), err
 }
 
 // ReadNullableASCII reads an optional ASCII string. A single all-zero entity
 // (byte 0x80) is NULL.
 func (r *Reader) ReadNullableASCII() (s string, null bool, err error) {
-	data, err := r.readASCIIEntity()
-	if err != nil {
-		return "", false, err
-	}
-	return interpretASCII(data, true)
+	b, null, err := r.readASCIIBytes(true)
+	return string(b), null, err
 }
 
-// interpretASCII turns entity data bytes into a string, handling the
-// zero-preamble rules (§10.6.3). When nullable, a leading zero-preamble that
-// leaves nothing behind means NULL.
-func interpretASCII(data []byte, nullable bool) (s string, null bool, err error) {
+// interpretASCII strips the zero-preamble from entity data bytes (§10.6.3),
+// returning the value bytes. When nullable, a lone zero byte means NULL.
+func interpretASCII(data []byte, nullable bool) (b []byte, null bool, err error) {
 	if nullable {
 		if len(data) == 1 && data[0] == 0 {
-			return "", true, nil // NULL
+			return nil, true, nil // NULL
 		}
 		if data[0] == 0 {
 			// A nullable zero-preamble is only legal when the value it guards
@@ -71,24 +70,24 @@ func interpretASCII(data []byte, nullable bool) (s string, null bool, err error)
 			// encoding is overlong (§10.6.3 [ERR R9]).
 			rest := data[1:]
 			if rest[0] != 0 {
-				return "", false, ErrOverlong
+				return nil, false, ErrOverlong
 			}
 			data = rest
 		}
 		// else: no preamble — a plain non-nullable string follows.
 	}
 	if len(data) == 1 && data[0] == 0 {
-		return "", false, nil // empty string
+		return data[:0], false, nil // empty string
 	}
 	if len(data) >= 2 && data[0] == 0 {
 		// Zero-preamble followed by content: leading "\0" chars are real, but a
 		// non-zero byte right after the preamble makes the encoding overlong.
 		if data[1] != 0 {
-			return "", false, ErrOverlong
+			return nil, false, ErrOverlong
 		}
 		data = data[1:]
 	}
-	return string(data), false, nil
+	return data, false, nil
 }
 
 // ReadByteVector reads a mandatory byte vector: an unsigned length preamble

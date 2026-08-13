@@ -15,16 +15,13 @@ const (
 	ByteVectorKind
 )
 
-// readBytesValue reads one mandatory/nullable byte-like value per kind.
+// readBytesValue reads one mandatory/nullable byte-like value per kind. The
+// returned slice aliases the input buffer (byte vector) or the reader's scratch
+// (ASCII) and is only valid until the next read; callers that retain it copy.
 func (r *Reader) readBytesValue(kind BytesKind, optional bool) (val []byte, null bool, err error) {
 	switch kind {
 	case ASCIIKind:
-		if optional {
-			s, n, e := r.ReadNullableASCII()
-			return []byte(s), n, e
-		}
-		s, e := r.ReadASCII()
-		return []byte(s), false, e
+		return r.readASCIIBytes(optional)
 	default: // ByteVectorKind (incl. Unicode)
 		if optional {
 			return r.ReadNullableByteVector()
@@ -152,7 +149,7 @@ func DecodeASCIIDelta(r *Reader, optional, hasInitial bool, initial []byte, slot
 	if err != nil || null {
 		return nil, false, err // optional NULL: previous value untouched
 	}
-	part, err := r.ReadASCII()
+	part, _, err := r.readASCIIBytes(false)
 	if err != nil {
 		return nil, false, err
 	}
@@ -160,7 +157,7 @@ func DecodeASCIIDelta(r *Reader, optional, hasInitial bool, initial []byte, slot
 	if err != nil {
 		return nil, false, err
 	}
-	val, err = applyStringDelta(base, subLen, []byte(part))
+	val, err = applyStringDelta(base, subLen, part)
 	if err != nil {
 		return nil, false, err
 	}
@@ -220,25 +217,15 @@ func applyTail(base, tail []byte) []byte {
 // DecodeASCIITail decodes an ASCII string field under the tail operator.
 func DecodeASCIITail(r *Reader, pm *PMAP, optional, hasInitial bool, initial []byte, slot *BytesSlot) (val []byte, present bool, err error) {
 	if pm.Next() { // tail value present in stream
-		var part string
-		if optional {
-			s, null, err := r.ReadNullableASCII()
-			if err != nil {
-				return nil, false, err
-			}
-			if null {
-				slot.State = Empty
-				return nil, false, nil
-			}
-			part = s
-		} else {
-			s, err := r.ReadASCII()
-			if err != nil {
-				return nil, false, err
-			}
-			part = s
+		part, null, err := r.readASCIIBytes(optional)
+		if err != nil {
+			return nil, false, err
 		}
-		val = applyTail(tailBase(slot, hasInitial, initial), []byte(part))
+		if null {
+			slot.State = Empty
+			return nil, false, nil
+		}
+		val = applyTail(tailBase(slot, hasInitial, initial), part)
 		slot.set(val)
 		return val, true, nil
 	}

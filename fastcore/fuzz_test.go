@@ -78,8 +78,8 @@ func FuzzReaderPMAP(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if pm.numBits != len(pm.Buffer())*7 {
-			t.Fatalf("numBits = %d, want %d", pm.numBits, len(pm.Buffer())*7)
+		if got, want := pm.n+7*len(pm.ext), 7*r.Pos(); got != want {
+			t.Fatalf("unread bits = %d, want %d (one 7-bit group per entity byte)", got, want)
 		}
 		for range len(data)*8 + 16 {
 			_ = pm.Next()

@@ -23,8 +23,9 @@ var ErrOverflow = errors.New("fastcore: integer entity overflow")
 // messages with Reset and never allocates while reading scalars; string and
 // byte-vector reads return sub-slices of the input (zero-copy).
 type Reader struct {
-	buf []byte
-	pos int
+	buf     []byte
+	pos     int
+	scratch []byte // reused by ASCII reads for decoded (stop-bit-stripped) bytes
 }
 
 // NewReader returns a Reader over buf.
@@ -46,77 +47,102 @@ func (r *Reader) Remaining() int { return len(r.buf) - r.pos }
 // It enforces a ceiling of 64 significant bits (10 groups of 7 bits, with the
 // 10th group only contributing its lowest bit) — anything wider overflows.
 func (r *Reader) readEntityUnsigned() (uint64, error) {
-	if r.pos >= len(r.buf) {
+	buf, pos := r.buf, r.pos
+	if pos >= len(buf) {
 		return 0, ErrEndOfStream
 	}
-	b := r.buf[r.pos]
-	r.pos++
+	b := buf[pos]
+	pos++
 	if b&0x80 != 0 {
+		r.pos = pos
 		return uint64(b & 0x7f), nil
 	}
 
-	var val uint64
-	groups := 1
-	val = uint64(b & 0x7f)
-	for {
-		if r.pos >= len(r.buf) {
-			return 0, ErrEndOfStream
+	// Groups 2..9 accumulate at most 63 bits and cannot overflow, so this loop
+	// carries no overflow checks; only the rare 10th-plus group needs them.
+	val := uint64(b & 0x7f)
+	end := min(pos+8, len(buf))
+	for pos < end {
+		b = buf[pos]
+		pos++
+		val = (val << 7) | uint64(b&0x7f)
+		if b&0x80 != 0 {
+			r.pos = pos
+			return val, nil
 		}
-		b = r.buf[r.pos]
-		r.pos++
+	}
+	groups := 9
+	for pos < len(buf) {
+		b = buf[pos]
+		pos++
 		groups++
-		if groups > 10 || (groups == 10 && val > (^uint64(0))>>7) {
+		if groups > 10 || val > (^uint64(0))>>7 {
+			r.pos = pos
 			return 0, ErrOverflow
 		}
 		val = (val << 7) | uint64(b&0x7f)
 		if b&0x80 != 0 {
+			r.pos = pos
 			return val, nil
 		}
 	}
+	r.pos = pos
+	return 0, ErrEndOfStream
 }
 
 // readEntitySigned decodes one stop-bit entity as a two's-complement signed
 // integer. The most significant data bit of the first byte is the sign bit
 // (§10.6.1.1), so the accumulator is seeded to all-ones when it is set.
 func (r *Reader) readEntitySigned() (int64, error) {
-	if r.pos >= len(r.buf) {
+	buf, pos := r.buf, r.pos
+	if pos >= len(buf) {
 		return 0, ErrEndOfStream
 	}
-	b := r.buf[r.pos]
-	r.pos++
+	b := buf[pos]
+	pos++
+	// Sign-extend the 7 data bits of the first group: shift them to the top of
+	// a byte (dropping the stop bit), then arithmetic-shift back down.
+	val := int64(int8(b<<1)) >> 1
 	if b&0x80 != 0 {
-		val := int64(b & 0x7f)
-		if b&0x40 != 0 {
-			val |= ^int64(0x7f)
-		}
+		r.pos = pos
 		return val, nil
 	}
 
-	var val int64
-	if b&0x40 != 0 {
-		val = -1
-	}
-	groups := 1
-	val = (val << 7) | int64(b&0x7f)
-	for {
-		if r.pos >= len(r.buf) {
-			return 0, ErrEndOfStream
+	// Groups 2..9 grow the magnitude to at most 62 bits and cannot overflow,
+	// so this loop carries no overflow checks; only the rare 10th-plus group
+	// needs them.
+	end := min(pos+8, len(buf))
+	for pos < end {
+		b = buf[pos]
+		pos++
+		val = (val << 7) | int64(b&0x7f)
+		if b&0x80 != 0 {
+			r.pos = pos
+			return val, nil
 		}
-		b = r.buf[r.pos]
-		r.pos++
+	}
+	groups := 9
+	for pos < len(buf) {
+		b = buf[pos]
+		pos++
 		groups++
 		if groups > 10 {
+			r.pos = pos
 			return 0, ErrOverflow
 		}
 		shifted := val << 7
 		if shifted>>7 != val { // significant bits lost -> would not fit int64
+			r.pos = pos
 			return 0, ErrOverflow
 		}
 		val = shifted | int64(b&0x7f)
 		if b&0x80 != 0 {
+			r.pos = pos
 			return val, nil
 		}
 	}
+	r.pos = pos
+	return 0, ErrEndOfStream
 }
 
 // ReadUint reads a mandatory unsigned integer field (§10.6.1.2).
