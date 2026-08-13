@@ -305,12 +305,67 @@ func optionalHasFields(instrs []ast.Instruction) []string {
 	return out
 }
 
-// nestedMethod registers a PMAP buffer field for a nested segment and renders
-// its method.
+// nestedMethod renders a nested segment's method, registering a PMAP buffer
+// field only when the segment carries a presence map on the wire.
 func (g *generator) nestedMethod(slotPrefix string, instrs []ast.Instruction) error {
+	if !segmentNeedsPMAP(instrs) {
+		return g.renderMethod(slotPrefix, instrs, false, "")
+	}
 	buf := "pmap_" + sanitize(slotPrefix)
 	g.pmaps = append(g.pmaps, buf)
 	return g.renderMethod(slotPrefix, instrs, false, buf)
+}
+
+// opUsesPMAPBit reports whether a field operator occupies a presence-map bit
+// (§6.3): constant only when the field is optional; default, copy, increment,
+// and tail always; none and delta never.
+func opUsesPMAPBit(k ast.OpKind, optional bool) bool {
+	switch k {
+	case ast.Constant:
+		return optional
+	case ast.Default, ast.Copy, ast.Increment, ast.Tail:
+		return true
+	default: // NoOp, Delta
+		return false
+	}
+}
+
+// fieldUsesPMAPBit reports whether a field occupies at least one bit of its
+// segment's presence map. A decimal with individual operators claims a bit per
+// component: the exponent shares the field's optionality, the mantissa is
+// always mandatory (§6.3.5).
+func fieldUsesPMAPBit(f *ast.Field) bool {
+	optional := f.Presence == ast.Optional
+	if f.Exponent != nil || f.Mantissa != nil {
+		return (f.Exponent != nil && opUsesPMAPBit(f.Exponent.Kind, optional)) ||
+			(f.Mantissa != nil && opUsesPMAPBit(f.Mantissa.Kind, false))
+	}
+	return opUsesPMAPBit(f.Op.Kind, optional)
+}
+
+// segmentNeedsPMAP reports whether a group or sequence-element segment carries
+// its own presence map on the wire: only when at least one directly contained
+// instruction uses a bit of it (§7.8.1). An optional nested group and a
+// sequence length field with a pmap-using operator claim a bit of this
+// segment's map; their bodies are separate segments judged on their own.
+func segmentNeedsPMAP(instrs []ast.Instruction) bool {
+	for _, in := range instrs {
+		switch x := in.(type) {
+		case *ast.Field:
+			if fieldUsesPMAPBit(x) {
+				return true
+			}
+		case *ast.Group:
+			if x.Presence == ast.Optional {
+				return true
+			}
+		case *ast.Sequence:
+			if x.Length != nil && opUsesPMAPBit(x.Length.Op.Kind, x.Presence == ast.Optional) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // step renders the decode statement for one instruction, returning the rendered

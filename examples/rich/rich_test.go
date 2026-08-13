@@ -6,20 +6,23 @@ import (
 	"github.com/iamd3vil/gofastdecoder/fastcore"
 )
 
+// marketDataFrame carries one MarketData message. The stats group and the
+// entries elements contain no pmap-using operators, so per §7.8.1 they carry
+// no presence map of their own. These bytes are byte-for-byte what mFAST's
+// fast_encoder_v2 produces for the same values (cross-validated 2026-08-13).
 var marketDataFrame = []byte{
 	0x80,                   // top-level PMAP
 	0x81,                   // seqNum = 1
 	0xE4,                   // sendingTime = 100
 	0x41, 0x41, 0x50, 0xCC, // symbol = AAPL
 	0xFE, 0xAA, // price = 42 x 10^-2
-	0x80,                         // stats PMAP
 	0x85,                         // bidCount = 5
 	0x84, 0xDE, 0xAD, 0xBE, 0xEF, // payload = 4 bytes
-	0x84,             // entries length = 4
-	0x80, 0x81, 0xC2, 0xFE, 0xAA, 0x8A, // entry 1
-	0x80, 0x82, 0xC1, 0xFE, 0xAB, 0x94, // entry 2
-	0x80, 0x81, 0xC2, 0xFE, 0xAC, 0x9E, // entry 3
-	0x80, 0x82, 0xC1, 0xFE, 0xAD, 0xA8, // entry 4
+	0x84,                         // entries length = 4
+	0x81, 0xC2, 0xFE, 0xAA, 0x8A, // entry 1
+	0x82, 0xC1, 0xFE, 0xAB, 0x94, // entry 2
+	0x81, 0xC2, 0xFE, 0xAC, 0x9E, // entry 3
+	0x82, 0xC1, 0xFE, 0xAD, 0xA8, // entry 4
 }
 
 func TestMarketDataDecode(t *testing.T) {

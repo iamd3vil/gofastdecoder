@@ -50,16 +50,21 @@ func (d *{{.Recv}}Decoder) {{.Name}}(r *fastcore.Reader, pmArg *fastcore.PMAP, m
 }
 {{- end -}}
 
-{{/* methodNested: a group or sequence-element segment, which reads its own
-presence map into a dedicated buffer so it never clobbers a parent's PMAP. */}}
+{{/* methodNested: a group or sequence-element segment. A segment carries a
+presence map on the wire only when one of its fields needs a bit (§7.8.1):
+with a Buf it reads its own map into a dedicated buffer so it never clobbers
+a parent's PMAP; without one it decodes with an empty map (no field reads it,
+but the operator helpers take one by signature). */}}
 {{- define "methodNested" -}}
 func (d *{{.Recv}}Decoder) {{.Name}}(r *fastcore.Reader, m *{{.Struct}}) error {
-	pm, err := r.ReadPMAP(d.{{.Buf}})
+{{if .Buf}}	pm, err := r.ReadPMAP(d.{{.Buf}})
 	if err != nil {
 		return err
 	}
 	d.{{.Buf}} = pm.Buffer()
-{{range .Resets}}	m.{{.}} = false
+{{else}}	var pm fastcore.PMAP
+	_ = pm
+{{end}}{{range .Resets}}	m.{{.}} = false
 {{end}}{{range .Steps}}{{.}}
 {{end}}	return nil
 }

@@ -35,8 +35,6 @@ type MarketData struct {
 // dictionary state persists as the field operators require.
 type MarketDataDecoder struct {
 	pmap                             []byte
-	pmap_MarketDataStats             []byte
-	pmap_MarketDataEntriesElem       []byte
 	s_MarketDataSeqNum               fastcore.UintSlot
 	s_MarketDataSendingTime          fastcore.UintSlot
 	s_MarketDataSymbol               fastcore.BytesSlot
@@ -109,11 +107,8 @@ func (d *MarketDataDecoder) decodeMarketData(r *fastcore.Reader, pmArg *fastcore
 	return nil
 }
 func (d *MarketDataDecoder) decodeMarketDataStats(r *fastcore.Reader, m *MarketDataStats) error {
-	pm, err := r.ReadPMAP(d.pmap_MarketDataStats)
-	if err != nil {
-		return err
-	}
-	d.pmap_MarketDataStats = pm.Buffer()
+	var pm fastcore.PMAP
+	_ = pm
 	if v, present, err := fastcore.DecodeUintNone(r, false); err != nil {
 		return err
 	} else if present {
@@ -127,11 +122,8 @@ func (d *MarketDataDecoder) decodeMarketDataStats(r *fastcore.Reader, m *MarketD
 	return nil
 }
 func (d *MarketDataDecoder) decodeMarketDataEntriesElem(r *fastcore.Reader, m *MarketDataEntriesElem) error {
-	pm, err := r.ReadPMAP(d.pmap_MarketDataEntriesElem)
-	if err != nil {
-		return err
-	}
-	d.pmap_MarketDataEntriesElem = pm.Buffer()
+	var pm fastcore.PMAP
+	_ = pm
 	if v, present, err := fastcore.DecodeUintNone(r, false); err != nil {
 		return err
 	} else if present {
